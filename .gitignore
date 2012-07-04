@@ -8,3 +8,4 @@ _ReSharper.*/
 *.crunch*.cache
 *.feature.cs
 *.dotCover
+packages/*/

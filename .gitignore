@@ -1,0 +1,10 @@
+*.suo
+bin/
+obj/
+_ReSharper.*/
+*ReSharper.User
+*DotSettings.user
+*.crunch*.xml
+*.crunch*.cache
+*.feature.cs
+*.dotCover

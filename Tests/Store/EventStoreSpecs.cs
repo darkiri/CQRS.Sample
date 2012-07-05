@@ -87,7 +87,7 @@ namespace CQRS.Sample.Tests.Store
         Establish context = () =>
         {
             PersisterMock
-                .Setup(p => p.PersistEvents(StreamId, Any<IEnumerable<IEvent>>()))
+                .Setup(p => p.PersistEvents(StreamId, Any<IEnumerable<StoreEvent>>()))
                 .Throws<OptimisticConcurrencyException>();
             PersisterMock
                 .Setup(p => p.GetEvents(StreamId, 10, Int32.MaxValue))
@@ -120,7 +120,7 @@ namespace CQRS.Sample.Tests.Store
     public class when_event_dispatched : event_store_context
     {
         static SimpleDispatcher _dispatcher;
-        static TestEvent SomeEvent = Event(10, "tenth");
+        static StoreEvent SomeEvent = Event(10, "tenth");
 
         static Mock<IServiceBus> BusMock;
 
@@ -142,17 +142,5 @@ namespace CQRS.Sample.Tests.Store
 
         It should_mark_events_as_dispatched =
             () => PersisterMock.Verify(p => p.MarkAsDispatched(SomeEvent), Times.Once());
-    }
-
-    public class TestEvent : IEvent, IEquatable<TestEvent>
-    {
-        public int StreamRevision { get; set; }
-        public Guid StreamId { get; set; }
-        public Guid Id { get; set; }
-        public object Body { get; set; }
-        public bool Equals(TestEvent other)
-        {
-            return Id == other.Id;
-        }
-    }
+    }    
 }

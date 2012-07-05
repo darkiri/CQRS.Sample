@@ -8,8 +8,8 @@ namespace CQRS.Sample.Store
     {
         private readonly IPersister _persister;
         private readonly ICommitDispatcher _dispatcher;
-        private readonly List<IEvent> _pendingEvents = new List<IEvent>();
-        private readonly List<IEvent> _committedEvents = new List<IEvent>();
+        private readonly List<StoreEvent> _pendingEvents = new List<StoreEvent>();
+        private readonly List<StoreEvent> _committedEvents = new List<StoreEvent>();
 
         public EventStream(IPersister persister, ICommitDispatcher dispatcher, Guid streamId, int revision)
         {
@@ -25,17 +25,17 @@ namespace CQRS.Sample.Store
 
         public int Revision { get; private set; }
 
-        public IEnumerable<IEvent> UncommittedEvents
+        public IEnumerable<StoreEvent> UncommittedEvents
         {
             get { return _pendingEvents; }
         }
 
-        public IEnumerable<IEvent> CommittedEvents
+        public IEnumerable<StoreEvent> CommittedEvents
         {
             get { return _committedEvents; }
         }
 
-        public void Append(IEvent evt)
+        public void Append(StoreEvent evt)
         {
             _pendingEvents.Add(evt);
         }
@@ -62,7 +62,7 @@ namespace CQRS.Sample.Store
             }
         }
 
-        private void PopulateStream(IEnumerable<IEvent> events)
+        private void PopulateStream(IEnumerable<StoreEvent> events)
         {
             foreach (var evt in events)
             {

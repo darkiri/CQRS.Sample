@@ -9,8 +9,8 @@ namespace CQRS.Sample.Tests.Store
     public class event_based_context {
         protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC737");
 
-        protected static TestEvent Event(int revision, object payload) {
-            return new TestEvent()
+        protected static StoreEvent Event(int revision, object payload) {
+            return new StoreEvent()
             {
                 Id = Guid.NewGuid(),
                 StreamId = StreamId,
@@ -43,7 +43,7 @@ namespace CQRS.Sample.Tests.Store
 
         protected static void VerifyPersistEventsCall(int times)
         {
-            PersisterMock.Verify(p => p.PersistEvents(StreamId, Moq.It.IsAny<IEnumerable<IEvent>>()), Times.Exactly(times));
+            PersisterMock.Verify(p => p.PersistEvents(StreamId, Moq.It.IsAny<IEnumerable<StoreEvent>>()), Times.Exactly(times));
         }
 
         protected static void VerifyLoadingEventsCall(int minRevision, int maxRevision, int times)

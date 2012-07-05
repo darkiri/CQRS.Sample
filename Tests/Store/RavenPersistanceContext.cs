@@ -23,7 +23,7 @@ namespace CQRS.Sample.Tests.Store
 
         private Cleanup all = () => Store.Dispose();
 
-        protected static void AssertEventInStore(TestEvent expected)
+        protected static void AssertEventInStore(StoreEvent expected)
         {
             using (var session = Store.OpenSession())
             {
@@ -36,7 +36,7 @@ namespace CQRS.Sample.Tests.Store
             }
         }
 
-        protected static void AssertEventNotInStore(TestEvent expected)
+        protected static void AssertEventNotInStore(StoreEvent expected)
         {
             using (var session = Store.OpenSession())
             {
@@ -45,7 +45,7 @@ namespace CQRS.Sample.Tests.Store
             }
         }
 
-        private static IEnumerable<IEvent> GetAllPersistedEvents(IDocumentSession session)
+        private static IEnumerable<StoreEvent> GetAllPersistedEvents(IDocumentSession session)
         {
             var events = session
                 .Query<RavenPersister.Commit>()

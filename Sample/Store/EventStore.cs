@@ -23,7 +23,7 @@ namespace CQRS.Sample.Store
             return new EventStream(_persister, _commitDispatcher, streamId, 0);
         }
 
-        public IEnumerable<IEvent> GetEvents(Guid streamId, int minRevision, int maxRevision)
+        public IEnumerable<StoreEvent> GetEvents(Guid streamId, int minRevision, int maxRevision)
         {
             return _persister.GetEvents(streamId, minRevision, maxRevision);
         }

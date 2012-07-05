@@ -108,7 +108,7 @@
     <Compile Include="Store\EventStore.cs" />
     <Compile Include="Store\EventStream.cs" />
     <Compile Include="Store\ICommitDispatcher.cs" />
-    <Compile Include="Store\IEvent.cs" />
+    <Compile Include="Store\StoreEvent.cs" />
     <Compile Include="Store\IEventStream.cs" />
     <Compile Include="Store\IPersister.cs" />
     <Compile Include="Store\RavenPersister.cs" />

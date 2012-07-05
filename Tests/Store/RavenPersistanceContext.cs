@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using NUnit.Framework;
@@ -10,7 +9,7 @@ using Raven.Client.Embedded;
 namespace CQRS.Sample.Tests.Store
 {
     [Subject(typeof (RavenPersister))]
-    public class raven_persistance_context
+    public class raven_persistance_context : event_based_context
     {
         protected static IDocumentStore Store;
         protected static RavenPersister Persister;

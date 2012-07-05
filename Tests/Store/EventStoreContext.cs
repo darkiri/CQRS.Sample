@@ -6,8 +6,16 @@ using Moq;
 
 namespace CQRS.Sample.Tests.Store
 {
+    public class event_based_context {
+        protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC737");
+
+        protected static TestEvent Event(int revision, object payload) {
+            return new TestEvent(Guid.NewGuid(), revision, payload);
+        }
+    }
+
     [Subject(typeof (EventStore))]
-    public class event_store_context
+    public class event_store_context : event_based_context
     {
         protected static Mock<ICommitDispatcher> DispatcherMock;
         protected static Mock<IPersister> PersisterMock;
@@ -21,15 +29,20 @@ namespace CQRS.Sample.Tests.Store
                                 Store = new EventStore(PersisterMock.Object, DispatcherMock.Object);
                             };
 
-        public static IEventStream WithStream(Guid streamId, int revision)
+        public static IEventStream WithStream(int revision)
         {
-            Stream = new EventStream(PersisterMock.Object, DispatcherMock.Object, streamId, revision);
+            Stream = new EventStream(PersisterMock.Object, DispatcherMock.Object, StreamId, revision);
             return Stream;
         }
 
         protected static void VerifyPersistEventsCall(int times)
         {
-            PersisterMock.Verify(p => p.PersistEvents(Stream.StreamId, Moq.It.IsAny<IEnumerable<IEvent>>()), Times.Exactly(times));
+            PersisterMock.Verify(p => p.PersistEvents(StreamId, Moq.It.IsAny<IEnumerable<IEvent>>()), Times.Exactly(times));
+        }
+
+        protected static void VerifyLoadingEventsCall(int minRevision, int maxRevision, int times)
+        {
+            PersisterMock.Verify(p => p.GetEvents(StreamId, minRevision, maxRevision), Times.Exactly(times));
         }
 
         protected static void VerifyDispatchCall(int times)

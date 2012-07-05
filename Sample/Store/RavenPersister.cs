@@ -74,10 +74,8 @@ namespace CQRS.Sample.Store
         {
             using (var session = _store.OpenSession())
             {
-                return session
-                    .Query<Commit, CommitsByStreamRevision>()
-                    .Where(c => c.Stream == streamId && c.Events.Any(e => e.StreamRevision >= minRevision && e.StreamRevision <= maxRevision))
-                    .ToArray()
+                var commits = session.Query<Commit, CommitsByStreamRevision>().Where(c => c.Stream == streamId && c.Events.Any(e => e.StreamRevision >= minRevision && e.StreamRevision <= maxRevision)).ToArray();
+                return commits
                     .SelectMany(c => c.Events)
                     .Where(e => e.StreamId == streamId && e.StreamRevision >= minRevision && e.StreamRevision <= maxRevision);
             }
@@ -117,7 +115,12 @@ namespace CQRS.Sample.Store
         {
             Map = commits => from commit in commits
                              from evt in commit.Events
-                             select new {commit.Stream, evt.StreamRevision};
+                             select new
+                             {
+                                 commit.Stream, 
+                                 commit.Revision,
+                                 Events_StreamRevision = evt.StreamRevision,
+                             };
             Sort(commit => commit.Revision, SortOptions.Int);
         }
     }

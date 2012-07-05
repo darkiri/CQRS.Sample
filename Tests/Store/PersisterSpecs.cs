@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using NUnit.Framework;
@@ -35,18 +36,22 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_loading_events : raven_persistance_context
     {
+        static TestEvent FirstEvent = Event(1, "first");
+        static TestEvent SecondEvent = Event(2, "second");
+
         static List<TestEvent> SampleEvents = new List<TestEvent>
         {
             Event(0, "zero"),
-            Event(1, "first"),
-            Event(2, "second"),
+            FirstEvent,
+            SecondEvent,
             Event(3, "third"),
         };
         static IEnumerable<IEvent> LoadedEvents;
 
         Establish context = () => Persister.PersistEvents(StreamId, SampleEvents);
-        Because of = () => LoadedEvents = Persister.GetEvents(StreamId, 1, 2);
-        It should_request_events_from_the_database = () => Assert.That(LoadedEvents, Is.EquivalentTo(SampleEvents));
+        Because of = () => LoadedEvents = Persister.GetEvents(StreamId, 1, 2).ToArray();
+
+        It should_request_events_from_the_database = () => Assert.That(LoadedEvents, Is.EquivalentTo(new[] {FirstEvent, SecondEvent}));
     }
 
     [Subject(typeof (RavenPersister))]

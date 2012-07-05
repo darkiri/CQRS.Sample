@@ -144,19 +144,15 @@ namespace CQRS.Sample.Tests.Store
             () => PersisterMock.Verify(p => p.MarkAsDispatched(SomeEvent), Times.Once());
     }
 
-    public class TestEvent : IEvent
+    public class TestEvent : IEvent, IEquatable<TestEvent>
     {
-        public TestEvent(Guid id, int revision, object body)
+        public int StreamRevision { get; set; }
+        public Guid StreamId { get; set; }
+        public Guid Id { get; set; }
+        public object Body { get; set; }
+        public bool Equals(TestEvent other)
         {
-            StreamId = id;
-            StreamRevision = revision;
-            Body = body;
-            Id = Guid.NewGuid();
+            return Id == other.Id;
         }
-
-        public int StreamRevision { get; private set; }
-        public Guid StreamId { get; private set; }
-        public Guid Id { get; private set; }
-        public object Body { get; private set; }
     }
 }

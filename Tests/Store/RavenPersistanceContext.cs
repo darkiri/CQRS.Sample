@@ -49,7 +49,6 @@ namespace CQRS.Sample.Tests.Store
         {
             var events = session
                 .Query<RavenPersister.Commit>()
-                .Where(c => c.Enabled)
                 .ToArray()
                 .SelectMany(c => c.Events);
             return events;

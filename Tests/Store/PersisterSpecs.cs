@@ -4,6 +4,8 @@ using System.Linq;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using NUnit.Framework;
+using Raven.Abstractions.Exceptions;
+using Raven.Client;
 
 namespace CQRS.Sample.Tests.Store
 {
@@ -43,12 +45,12 @@ namespace CQRS.Sample.Tests.Store
         static StoreEvent SecondEvent = Event(2, "second");
 
         static List<StoreEvent> SampleEvents = new List<StoreEvent>
-                                               {
-                                                   Event(0, "zero"),
-                                                   FirstEvent,
-                                                   SecondEvent,
-                                                   Event(3, "third"),
-                                               };
+        {
+            Event(0, "zero"),
+            FirstEvent,
+            SecondEvent,
+            Event(3, "third"),
+        };
 
         static IEnumerable<StoreEvent> LoadedEvents;
 
@@ -76,16 +78,53 @@ namespace CQRS.Sample.Tests.Store
         static StoreEvent SecondEvent = Event(2, "second");
 
         static List<StoreEvent> SampleEvents = new List<StoreEvent>
-                                               {
-                                                   FirstEvent,
-                                                   SecondEvent,
-                                               };
+        {
+            FirstEvent,
+            SecondEvent,
+        };
 
         Establish context = () =>
-                            {
-                                Persister.PersistEvents(StreamId, SampleEvents);
-                                Persister.MarkAsDispatched(FirstEvent);
-                            };
-        It should_request_events_with_flag_undispatched = () => Assert.That(Persister.GetUndispatchedEvents().First(), Is.EqualTo(SecondEvent));
+        {
+            Persister.PersistEvents(StreamId, SampleEvents);
+            Persister.MarkAsDispatched(FirstEvent);
+        };
+
+        It should_request_events_with_flag_undispatched =
+            () => Assert.That(Persister.GetUndispatchedEvents().First(), Is.EqualTo(SecondEvent));
+    }
+
+
+    [Subject("Raven Experiments")]
+    public class when_storing_two_objects_with_same_id_in_separate_sessions : raven_persistance_context
+    {
+        static Exception Exception;
+
+        Because of = () => Exception = Catch.Exception(CreateTwoObjectsInTwoSessions);
+        It should_throw_concurrency_exception = () => Exception.ShouldBeOfType<ConcurrencyException>();
+
+        static void StoreOnce(IDocumentSession session, string text)
+        {
+            session.Advanced.UseOptimisticConcurrency = true;
+            session.Store(new MyClass {Id = "1", Text = text});
+            session.SaveChanges();
+        }
+
+        static void CreateTwoObjectsInTwoSessions()
+        {
+            using (var session = Store.OpenSession())
+            {
+                StoreOnce(session, "first");
+            }
+            using (var session = Store.OpenSession())
+            {
+                StoreOnce(session, "another first");
+            }
+        }
+
+        public class MyClass
+        {
+            public string Id { get; set; }
+            public string Text;
+        }
     }
 }

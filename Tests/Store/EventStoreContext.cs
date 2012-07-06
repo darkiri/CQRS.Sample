@@ -10,7 +10,7 @@ namespace CQRS.Sample.Tests.Store
         protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC737");
 
         protected static StoreEvent Event(int revision, object payload) {
-            return new StoreEvent()
+            return new StoreEvent
             {
                 Id = Guid.NewGuid(),
                 StreamId = StreamId,

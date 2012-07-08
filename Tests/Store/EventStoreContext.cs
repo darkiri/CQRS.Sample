@@ -13,7 +13,6 @@ namespace CQRS.Sample.Tests.Store
             return new StoreEvent
             {
                 Id = Guid.NewGuid(),
-                StreamId = StreamId,
                 StreamRevision = revision,
                 Body = payload,
             };

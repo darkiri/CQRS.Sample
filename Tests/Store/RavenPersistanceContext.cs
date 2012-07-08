@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using NUnit.Framework;
@@ -17,27 +19,53 @@ namespace CQRS.Sample.Tests.Store
         private Establish context = () =>
                                     {
                                         Store = new EmbeddableDocumentStore {RunInMemory = true}.Initialize();
-                                        Register.Indexes(Store);
                                         Persister = new RavenPersister(Store);
                                     };
 
         private Cleanup all = () => Store.Dispose();
 
+        protected static void PersistSomeEvents(IEnumerable<StoreEvent> events)
+        {
+            Persister.PersistEvents(StreamId, events);
+            WaitForNonStaleResults();
+        }
+
+        static void WaitForNonStaleResults()
+        {
+            while(Store.DatabaseCommands.GetStatistics().StaleIndexes.Length != 0)
+            {
+                Thread.Sleep(10);
+            }
+        }
+
         protected static void AssertEventInStore(StoreEvent expected)
         {
+            WaitForNonStaleResults();
             using (var session = Store.OpenSession())
             {
                 var events = GetAllPersistedEvents(session);
                 Assert.That(events.Count(), Is.EqualTo(1));
                 var evt = events.First();
-                Assert.That(evt.StreamId, Is.EqualTo(expected.StreamId));
                 Assert.That(evt.StreamRevision, Is.EqualTo(expected.StreamRevision));
                 Assert.That(evt.Body, Is.EqualTo(expected.Body));
             }
         }
 
+        protected static void AssertEqual(Func<Object> persisted, object expected)
+        {
+            WaitForNonStaleResults();
+            Assert.That(persisted(), Is.EqualTo(expected));
+        }
+
+        protected static void AssertEquivalent(Func<IEnumerable<Object>> persisted, params object[] expected)
+        {
+            WaitForNonStaleResults();
+            Assert.That(persisted().ToArray(), Is.EquivalentTo(expected));
+        }
+
         protected static void AssertEventNotInStore(StoreEvent expected)
         {
+            WaitForNonStaleResults();
             using (var session = Store.OpenSession())
             {
                 var events = GetAllPersistedEvents(session);

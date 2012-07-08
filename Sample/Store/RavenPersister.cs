@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Raven.Abstractions.Exceptions;
 using Raven.Abstractions.Indexing;
 using Raven.Client;
@@ -11,11 +12,12 @@ namespace CQRS.Sample.Store
 {
     public class RavenPersister : IPersister
     {
-        readonly IDocumentStore _store;
+        private readonly IDocumentStore _store;
 
         public RavenPersister(IDocumentStore store)
         {
             _store = store;
+            Register.Indexes(_store);
         }
 
         public void PersistEvents(Guid streamId, IEnumerable<StoreEvent> events)
@@ -24,18 +26,17 @@ namespace CQRS.Sample.Store
             {
                 using (var session = _store.OpenSession())
                 {
-                    var attempt = new Commit
-                    {
-                        Revision = events.Select(e => e.StreamRevision).Max(),
-                        Stream = streamId,
-                        Events = events.ToArray(),
-                    };
-                    attempt.Id = String.Format("{0}/{1}", attempt.Stream, events.Select(e => e.StreamRevision).Min());
+                    var commit = new Commit
+                                 {
+                                     Stream = streamId,
+                                     Events = events.ToArray(),
+                                 };
                     session.Advanced.UseOptimisticConcurrency = true;
-                    session.Store(attempt);
+                    session.Store(commit);
                     session.SaveChanges();
                 }
-            } catch (ConcurrencyException)
+            }
+            catch (ConcurrencyException)
             {
                 throw new OptimisticConcurrencyException();
             }
@@ -43,19 +44,44 @@ namespace CQRS.Sample.Store
 
         public IEnumerable<StoreEvent> GetEvents(Guid streamId, int minRevision, int maxRevision)
         {
+            var commits = LoadCommits(streamId, minRevision, maxRevision);
+            var events = FilterEvents(commits, minRevision, maxRevision);
+            return events;
+        }
+
+        private IEnumerable<Commit> LoadCommits(Guid streamId, int minRevision, int maxRevision)
+        {
             using (var session = _store.OpenSession())
             {
-                var commits = session
-                    .Query<Commit, CommitsByStreamRevision>()
-                    .Where(
-                        c =>
-                        c.Stream == streamId &&
-                        c.Events.Any(e => e.StreamRevision >= minRevision && e.StreamRevision <= maxRevision)).ToArray();
-                return commits
+                return session
+                    .Query<Commit, CommitsByEventRevision>()
+                    .Customize(a => a.WaitForNonStaleResultsAsOfLastWrite())
+                    .Where(c => c.Stream == streamId &&
+                                c.Events.Any(e => e.StreamRevision >= minRevision &&
+                                                  e.StreamRevision <= maxRevision))
+                    .ToArray();
+            }
+        }
+
+        private static IEnumerable<StoreEvent> FilterEvents(IEnumerable<Commit> commits, int minRevision, int maxRevision)
+        {
+            return commits
+                .SelectMany(c => c.Events)
+                .Where(e => e.StreamRevision >= minRevision &&
+                            e.StreamRevision <= maxRevision)
+                .OrderBy(e => e.StreamRevision);
+        }
+
+        public IEnumerable<StoreEvent> GetUndispatchedEvents()
+        {
+            using (var session = _store.OpenSession())
+            {
+                return session
+                    .Query<Commit, CommitByEventDispatched>()
+                    .Where(c => c.Events.Any(e => !e.IsDispatched))
+                    .ToArray()
                     .SelectMany(c => c.Events)
-                    .Where(
-                        e =>
-                        e.StreamId == streamId && e.StreamRevision >= minRevision && e.StreamRevision <= maxRevision);
+                    .Where(e => !e.IsDispatched);
             }
         }
 
@@ -64,7 +90,7 @@ namespace CQRS.Sample.Store
             using (var session = _store.OpenSession())
             {
                 var storedEvent = session
-                    .Query<Commit>()
+                    .Query<Commit, CommitByEventId>()
                     .First(c => c.Events.Any(e => e.Id == evt.Id))
                     .Events
                     .Single(e => e.Id == evt.Id);
@@ -73,25 +99,20 @@ namespace CQRS.Sample.Store
             }
         }
 
-        public IEnumerable<StoreEvent> GetUndispatchedEvents()
-        {
-            using (var session = _store.OpenSession())
-            {
-                return session
-                    .Query<Commit, CommitByEventId>()
-                    .Where(c => c.Events.Any(e => !e.IsDispatched))
-                    .ToArray()
-                    .SelectMany(c => c.Events)
-                    .Where(e => !e.IsDispatched);
-            }
-        }
-
         public class Commit
         {
-            public string Id { get; set; }
             public Guid Stream { get; set; }
-            public int Revision { get; set; }
             public StoreEvent[] Events { get; set; }
+
+            public string Id
+            {
+                get { return String.Format("commits/{0}/{1}", Stream, Events.Select(e => e.StreamRevision).Min()); }
+            }
+
+            public int Revision
+            {
+                get { return Events.Select(e => e.StreamRevision).Max(); }
+            }
         }
     }
 
@@ -99,23 +120,38 @@ namespace CQRS.Sample.Store
     {
         public static void Indexes(IDocumentStore store)
         {
-            IndexCreation.CreateIndexes(typeof (RavenPersister).Assembly, store);
+            new CommitsByEventRevision().Execute(store);
+            new CommitByEventDispatched().Execute(store);
+            new CommitByEventId().Execute(store);
         }
     }
 
-    public class CommitsByStreamRevision : AbstractIndexCreationTask<RavenPersister.Commit, RavenPersister.Commit>
+    public class CommitsByEventRevision : AbstractIndexCreationTask<RavenPersister.Commit, RavenPersister.Commit>
     {
-        public CommitsByStreamRevision()
+        public CommitsByEventRevision()
         {
             Map = commits => from commit in commits
                              from evt in commit.Events
                              select new
-                             {
-                                 commit.Stream,
-                                 commit.Revision,
-                                 Events_StreamRevision = evt.StreamRevision,
-                             };
+                                    {
+                                        commit.Stream,
+                                        commit.Revision,
+                                        Events_StreamRevision = evt.StreamRevision,
+                                    };
             Sort(commit => commit.Revision, SortOptions.Int);
+        }
+    }
+
+    public class CommitByEventDispatched : AbstractIndexCreationTask<RavenPersister.Commit, RavenPersister.Commit>
+    {
+        public CommitByEventDispatched()
+        {
+            Map = commits => from commit in commits
+                             from evt in commit.Events
+                             select new
+                                    {
+                                        Events_IsDispatched = evt.IsDispatched
+                                    };
         }
     }
 
@@ -126,10 +162,9 @@ namespace CQRS.Sample.Store
             Map = commits => from commit in commits
                              from evt in commit.Events
                              select new
-                             {
-                                 Events_Id = evt.Id,
-                                 Events_IsDispatched = evt.IsDispatched
-                             };
+                                    {
+                                        Events_Id = evt.Id
+                                    };
         }
     }
 }

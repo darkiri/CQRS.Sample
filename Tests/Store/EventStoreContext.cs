@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using CQRS.Sample.Events;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using Moq;
@@ -9,14 +11,37 @@ namespace CQRS.Sample.Tests.Store
     public class event_based_context {
         protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC737");
 
-        protected static StoreEvent Event(int revision, object payload) {
-            return new StoreEvent
-            {
-                Id = Guid.NewGuid(),
-                StreamRevision = revision,
-                Body = payload,
-            };
+        protected static IdentifiableEvent Event(int revision, string payload) {
+            return new StringEvent(revision, payload);
         }
+    }
+
+    public abstract class IdentifiableEvent : IEvent, IEquatable<StringEvent>
+    {
+        protected IdentifiableEvent()
+        {
+            Id = Guid.NewGuid();
+        }
+
+        public Guid Id { get; set; }
+
+        public bool Equals(StringEvent other)
+        {
+            return null != other && Id == other.Id;
+        }
+
+        public int Version { get; protected set; }
+    }
+
+    public class StringEvent : IdentifiableEvent
+    {
+        public StringEvent(int version, string payload)
+        {
+            Version = version;
+            Payload = payload;
+        }
+
+        public string Payload { get; set; }
     }
 
     [Subject(typeof (EventStore))]
@@ -64,6 +89,18 @@ namespace CQRS.Sample.Tests.Store
         protected static T Any<T>()
         {
             return Moq.It.IsAny<T>();
+        }
+    }
+
+    public static class EventStoreContextExtensions
+    {
+        public static IEnumerable<StoreEvent> ToStoreEvents(this IEnumerable<IEvent> events)
+        {
+            return events.Select(evt => new StoreEvent
+            {
+                StreamRevision = evt.Version,
+                Body = evt,
+            });
         }
     }
 }

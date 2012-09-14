@@ -8,6 +8,7 @@ namespace CQRS.Sample.Bus
 {
     public class ServiceBus : IServiceBus
     {
+        readonly IHandlerRepository _repository;
         // should there be many queues with few listeners pro queue?
         // or just couple of queues with loads of listeners?
         // i am not going to imply anything or do any optimizations
@@ -15,12 +16,16 @@ namespace CQRS.Sample.Bus
         private readonly Queue<MessageFuture> _pendingMessages = new Queue<MessageFuture>();
         private readonly string _errorsQueueName;
 
-        private readonly IContainer _container;
 
-        public ServiceBus(IContainer container)
+        public ServiceBus(IHandlerRepository repository)
         {
-            _container = container;
+            _repository = repository;
             _errorsQueueName = "Errors";
+        }
+
+        public void Start()
+        {
+            _repository.GetHandlers().ToList().ForEach(AddHandler);
         }
 
         public void Subscribe<TMsg>(string queue, Action<TMsg> handler) where TMsg : IMessage
@@ -28,57 +33,38 @@ namespace CQRS.Sample.Bus
             AddSubscriber2Queue(queue, typeof (TMsg), msg => handler((TMsg) msg));
         }
 
+        public void Subscribe<TMsg>(Action<TMsg> handler) where TMsg : IMessage
+        {
+            var reflectedType = typeof (TMsg).ReflectedType;
+            AddSubscriber2Queue(reflectedType != null ? reflectedType.Name : null, typeof (TMsg), msg => handler((TMsg) msg));
+        }
+
         private void AddSubscriber2Queue(string queue, Type messageType, Action<IMessage> handler)
         {
             _queues.Add(Subscriber.Create(queue, messageType, handler));
         }
 
-        public void SubscribeAll(Assembly handlerDefinitions)
+        private void AddHandler(MethodInfo handlerMethod)
         {
-            handlerDefinitions
-                .GetTypes()
-                .Where(t => !t.IsAbstract)
-                .Where(type => MessageHandlersIn(type).Any())
-                .ToList()
-                .ForEach(SubscribeSingle);
-        }
-
-        private static List<MethodInfo> MessageHandlersIn(Type t)
-        {
-            return t.GetMethods()
-                .Where(m => m.IsPublic && m.Name == "Handle")
-                .Where(m => m.GetParameters().Count() == 1)
-                .Where(HasMessageParameter)
-                .ToList();
-        }
-
-        private static bool HasMessageParameter(MethodInfo m)
-        {
-            return typeof (IMessage).IsAssignableFrom(m.GetParameters().First().ParameterType);
-        }
-
-        private void SubscribeSingle(Type type)
-        {
-            MessageHandlersIn(type).ForEach(handler => AddHandler(type, handler));
-        }
-
-        private void AddHandler(Type type, MethodInfo handlerMethod)
-        {
+            var handlerInstance = _repository.GetInstance(handlerMethod);
             var messageType = handlerMethod.GetParameters().First().ParameterType;
-            var action = BuildLambda(type, handlerMethod, messageType);
 
-            AddSubscriber2Queue(type.Name, messageType, action);
+            var action = BuildLambda(handlerInstance, handlerMethod, messageType);
+
+            AddSubscriber2Queue(handlerInstance.GetType().Name, messageType, action);
         }
 
 
-        private Action<IMessage> BuildLambda(Type handlerObject, MethodInfo handlerMethod, Type messageType)
+        private Action<IMessage> BuildLambda(object handlerInstance, MethodInfo handlerMethod, Type messageType)
         {
             var lambdaParameter = Expression.Parameter(typeof (IMessage), "msg");
             var handlerParameter = Expression.Convert(lambdaParameter, messageType);
+
             var handlerCall = Expression.Call(
-                Expression.Constant(_container.GetInstance(handlerObject)),
+                Expression.Constant(handlerInstance),
                 handlerMethod,
-                handlerParameter);
+                new Expression[] {handlerParameter});
+
             return Expression.Lambda<Action<IMessage>>(handlerCall, lambdaParameter).Compile();
         }
 
@@ -116,6 +102,11 @@ namespace CQRS.Sample.Bus
                     .ToList()
                     .ForEach(h => DoSend(h, msg.Message));
             }
+        }
+
+        public void Cancel()
+        {
+            _pendingMessages.Clear();
         }
 
         private void DoSend(Subscriber subscriber, IMessage message)

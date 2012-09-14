@@ -53,7 +53,7 @@ namespace CQRS.Sample.Tests.Bus
     [Subject(typeof (ServiceBus), "Subscribing")]
     public class when_all_handlers_in_the_assembly_are_subscribed : with_bus_context
     {
-        Establish context = () => Bus.SubscribeAll(Assembly.GetExecutingAssembly());
+        Establish context = () => Bus.Start();
 
         Because of = () => Bus.SendNow("Handler1", new Message1());
         It should_delivere_message_to_subscriber1 = () => AssertMessagesReceived<Handler1, Message1>(1);

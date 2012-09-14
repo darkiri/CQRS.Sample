@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CQRS.Sample.Events;
 
 namespace CQRS.Sample.Store
 {
@@ -35,9 +36,15 @@ namespace CQRS.Sample.Store
             get { return _committedEvents; }
         }
 
-        public void Append(StoreEvent evt)
+        public void Append(IEvent evt)
         {
-            _pendingEvents.Add(evt);
+            var revision = _pendingEvents.Any() ? _pendingEvents.Last().StreamRevision : Revision;
+            _pendingEvents.Add(new StoreEvent
+            {
+                IsDispatched = false,
+                StreamRevision = revision + 1,
+                Body = evt,
+            });
         }
 
         public void Commit()

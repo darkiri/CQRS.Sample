@@ -31,7 +31,7 @@ namespace CQRS.Sample.Tests.Store
                 .Returns(new[]
                 {
                     Event(0, "first"), Event(1, "second"),
-                });
+                }.ToStoreEvents());
         }
 
         Establish context = SetupPersiter;
@@ -96,7 +96,7 @@ namespace CQRS.Sample.Tests.Store
                     Event(10, "tenth"),
                     Event(11, "eleventh"),
                     Event(12, "twelwth"),
-                });
+                }.ToStoreEvents());
             WithStream(10)
                 .Append(Event(11, "another eleventh"));
         };
@@ -120,7 +120,7 @@ namespace CQRS.Sample.Tests.Store
     public class when_event_dispatched : event_store_context
     {
         static SimpleDispatcher _dispatcher;
-        static StoreEvent SomeEvent = Event(10, "tenth");
+        static StoreEvent SomeEvent = new StoreEvent{ Id= Guid.NewGuid(), Body = Event(10, "tenth"), StreamRevision = 10};
 
         static Mock<IServiceBus> BusMock;
 
@@ -135,12 +135,11 @@ namespace CQRS.Sample.Tests.Store
 
         Because of = () => _dispatcher.Dispatch();
 
-        It should_send_event_to_bus = () => BusMock.Verify(b => b.Publish(SomeEvent));
+        It should_send_event_to_bus = () => BusMock.Verify(b => b.Publish(SomeEvent.Body));
 
         It should_request_undispatched_events =
             () => PersisterMock.Verify(p => p.GetUndispatchedEvents(), Times.Once());
 
-        It should_mark_events_as_dispatched =
-            () => PersisterMock.Verify(p => p.MarkAsDispatched(SomeEvent), Times.Once());
+        It should_mark_events_as_dispatched = () => PersisterMock.Verify(p => p.MarkAsDispatched(SomeEvent), Times.Once());
     }    
 }

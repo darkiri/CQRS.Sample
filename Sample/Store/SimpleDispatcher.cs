@@ -17,7 +17,8 @@ namespace CQRS.Sample.Store
         {
             foreach (var evt in _persister.GetUndispatchedEvents())
             {
-                _bus.Publish(evt);
+                _bus.Publish(evt.Body);
+                _bus.Commit();
                 _persister.MarkAsDispatched(evt);
             }
         }

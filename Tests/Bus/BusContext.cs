@@ -1,7 +1,9 @@
+using System.Reflection;
 using CQRS.Sample.Bus;
 using Machine.Specifications;
 using Moq;
 using NUnit.Framework;
+using StructureMap;
 
 namespace CQRS.Sample.Tests.Bus
 {
@@ -9,19 +11,17 @@ namespace CQRS.Sample.Tests.Bus
     public class with_bus_context
     {
 
-        static SimpleContainer _container;
         protected static ServiceBus Bus;
 
         Establish context = () =>
                                 {
-                                    _container = new SimpleContainer();
-                                    Bus = new ServiceBus(_container);
+                                    Bus = new ServiceBus(new HandlerRepository(Assembly.GetExecutingAssembly()));
                                 };
 
 
         protected static T Handler<T>()
         {
-            return _container.GetInstance<T>();
+            return ObjectFactory.GetInstance<T>();
         }
 
         protected static void AssertMessagesReceived<THandler, TMsg>(int expectedMessages)

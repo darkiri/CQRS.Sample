@@ -78,6 +78,7 @@ namespace CQRS.Sample.Store
             {
                 return session
                     .Query<Commit, CommitByEventDispatched>()
+                    .Customize(a => a.WaitForNonStaleResultsAsOfLastWrite())
                     .Where(c => c.Events.Any(e => !e.IsDispatched))
                     .ToArray()
                     .SelectMany(c => c.Events)

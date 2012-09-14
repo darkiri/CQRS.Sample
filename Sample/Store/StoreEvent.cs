@@ -1,5 +1,6 @@
 ﻿using System;
 using CQRS.Sample.Bus;
+using CQRS.Sample.Events;
 
 namespace CQRS.Sample.Store
 {
@@ -9,11 +10,11 @@ namespace CQRS.Sample.Store
         public int StreamRevision { get; set; }
         public bool IsDispatched { get; set; }
         
-        public object Body { get; set; }
+        public IEvent Body { get; set; }
 
         public bool Equals(StoreEvent other)
         {
-            return Id == other.Id;
+            return null != other && Id == other.Id;
         }
     }
 }

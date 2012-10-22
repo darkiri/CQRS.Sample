@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Web;
 using System.Web.Mvc;
+using CQRS.Sample.GUI.Models;
 
 namespace CQRS.Sample.GUI.Controllers
 {
@@ -33,37 +32,15 @@ namespace CQRS.Sample.GUI.Controllers
         }
 
         [HttpPost]
-        public ActionResult Create(CreateAccountModel model)
+        public ActionResult Create(CreateAccountViewModel model)
         {
             if (ModelState.IsValid)
             {
-                if (model.Password1 != model.Password2)
-                {
-                    ModelState.AddModelError("Password1", "Enter same password twice");
-                    ModelState.AddModelError("Password2", "Enter same password twice");
-                    return View(model);
-                }
                 return View();
             } else
             {
                 return View(model);
             }
         }
-    }
-
-    public class CreateAccountModel
-    {
-        [Required(ErrorMessage = "Required")]
-        [DataType(DataType.Date)]
-        [EmailAddress(ErrorMessage = "Not a valid email")]
-        public string Email { get; set; }
-
-        [DisplayName("Password")]
-        [Required(ErrorMessage = "Required")]
-        public string Password1 { get; set; }
-
-        [DisplayName("Repeat password")]
-        [Required(ErrorMessage = "Required")]
-        public string Password2 { get; set; }
     }
 }

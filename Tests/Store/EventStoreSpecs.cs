@@ -108,10 +108,10 @@ namespace CQRS.Sample.Tests.Store
         It should_not_trigger_dispatcher = () => VerifyDispatchCall(0.Times());
     }
 
-    [Subject(typeof (EventStore))]
+    [Subject(typeof (EventStream))]
     public class when_events_are_requested : event_store_context
     {
-        Because of = () => Store.GetEvents(StreamId, 1, 3);
+        Because of = () => WithStream(3).GetEvents(1, 3);
         It should_load_events_from_persistence = () => VerifyLoadingEventsCall(1, 3, 1.Times());
     }
 

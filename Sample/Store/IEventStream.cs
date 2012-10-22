@@ -11,5 +11,6 @@ namespace CQRS.Sample.Store
         IEnumerable<StoreEvent> UncommittedEvents { get; }
         IEnumerable<StoreEvent> CommittedEvents { get; }
         void Append(IEvent evt);
+        IEnumerable<IEvent> GetEvents(int minRevision, int maxRevision);
     }
 }

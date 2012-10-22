@@ -45,7 +45,7 @@ namespace CQRS.Sample.Tests.Aggregates
             _bus.Commit();
         };
 
-        It should_got_email = () => Assert.That(Email, Is.EqualTo("em@ai.il"));
-        It should_got_password = () => Assert.True(PasswordHash.ValidatePassword("Swordfish", Hash));
+        It should_set_email = () => Assert.That(Email, Is.EqualTo("em@ai.il"));
+        It should_set_password_hash = () => Assert.True(PasswordHash.ValidatePassword("Swordfish", Hash));
     }
 }

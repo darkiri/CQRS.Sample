@@ -8,6 +8,7 @@ namespace CQRS.Sample.Commands
         private readonly Guid _accountStreamId;
         public CreateAccount()
         {
+            // new account is a new stream
             _accountStreamId = Guid.NewGuid();
         }
 

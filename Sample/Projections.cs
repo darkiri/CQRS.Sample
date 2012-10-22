@@ -18,8 +18,8 @@ namespace CQRS.Sample
 
         public void Handle(CreateAccount command)
         {
-            var events = _store.GetEvents(command.StreamId, 0, Int32.MaxValue);
             var stream = _store.OpenStream(command.StreamId);
+            var events = stream.GetEvents(0, Int32.MaxValue);
             try
             {
                 var ar = new AccountAggregate(events, stream.Append);

@@ -19,17 +19,23 @@ namespace CQRS.Sample.Aggregates
 
         public void When(CreateAccount command)
         {
+            // No validation logic here
+            // Assuming that the UI has already checked email existence
+            // It is unlikely to have duplicate emails
+            // Still there will be an async email validation, just for fun
+
             if (_events.Any())
             {
                 throw new Exception("Account exists");
             }
 
             var accountCreated = new AccountCreated
-            {
-                Version = 0,
-                Email = command.Email,
-                PasswordHash = PasswordHash.CreateHash(command.Password)
-            };
+            (
+                command.StreamId,
+                0,
+                command.Email,
+                PasswordHash.CreateHash(command.Password)
+            );
             Apply(accountCreated);
         }
 

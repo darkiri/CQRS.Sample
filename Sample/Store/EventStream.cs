@@ -36,6 +36,14 @@ namespace CQRS.Sample.Store
             get { return _committedEvents; }
         }
 
+        public IEnumerable<IEvent> GetEvents(int minRevision, int maxRevision)
+        {
+            return _persister
+                .GetEvents(StreamId, minRevision, maxRevision)
+                .Select(e => e.Body)
+                .ToArray();
+        }
+ 
         public void Append(IEvent evt)
         {
             var revision = _pendingEvents.Any() ? _pendingEvents.Last().StreamRevision : Revision;

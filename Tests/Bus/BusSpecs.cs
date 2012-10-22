@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using CQRS.Sample.Bus;
 using Machine.Specifications;
 using Moq;

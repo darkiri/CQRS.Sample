@@ -128,6 +128,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Contracts\Contracts.csproj">
+      <Project>{027deef1-2fd3-4d2d-aa83-4d52f6d4c41f}</Project>
+      <Name>Contracts</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Sample\Sample.csproj">
       <Project>{9bdcd2c2-6a41-4d85-bfb1-21648d1b11fa}</Project>
       <Name>Sample</Name>

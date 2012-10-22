@@ -1,5 +1,4 @@
-﻿using System;
-using CQRS.Sample.Aggregates;
+﻿using CQRS.Sample.Aggregates;
 using CQRS.Sample.Bootstrapping;
 using CQRS.Sample.Bus;
 using CQRS.Sample.Commands;

@@ -1,4 +1,5 @@
-﻿using CQRS.Sample.Bus;
+﻿
+using CQRS.Sample.Bus;
 
 namespace CQRS.Sample.Events
 {

@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using CQRS.Sample.Bootstrapping;
 using CQRS.Sample.Events;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using NUnit.Framework;
 using Raven.Client;
-using Raven.Client.Embedded;
 
 namespace CQRS.Sample.Tests.Store
 {
@@ -18,11 +18,11 @@ namespace CQRS.Sample.Tests.Store
         protected static RavenPersister Persister;
 
         private Establish context = () =>
-                                    {
-                                        Store = new EmbeddableDocumentStore {RunInMemory = true}.Initialize();
-                                       // Store = new DocumentStore{Url = "http://localhost:8080"}.Initialize();
-                                        Persister = new RavenPersister(Store);
-                                    };
+        {
+            var storeConfig = Bootstrapper.InMemory();
+            Store = storeConfig.EventStore;
+            Persister = new RavenPersister(storeConfig);
+        };
 
         private Cleanup all = () => Store.Dispose();
 

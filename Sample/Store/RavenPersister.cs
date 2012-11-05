@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using CQRS.Sample.Bootstrapping;
 using Raven.Abstractions.Exceptions;
 using Raven.Abstractions.Indexing;
 using Raven.Client;
@@ -14,9 +15,9 @@ namespace CQRS.Sample.Store
     {
         private readonly IDocumentStore _store;
 
-        public RavenPersister(IDocumentStore store)
+        public RavenPersister(DocumentStoreConfiguration storeConfig)
         {
-            _store = store;
+            _store = storeConfig.EventStore;
             Register.Indexes(_store);
         }
 

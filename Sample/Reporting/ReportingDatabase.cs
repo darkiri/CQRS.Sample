@@ -1,4 +1,5 @@
-﻿using CQRS.Sample.Events;
+﻿using CQRS.Sample.Bootstrapping;
+using CQRS.Sample.Events;
 using Raven.Client;
 
 namespace CQRS.Sample.Reporting
@@ -7,9 +8,9 @@ namespace CQRS.Sample.Reporting
     {
         private readonly IDocumentStore _documentStore;
 
-        public ReportingDatabase(IDocumentStore documentStore)
+        public ReportingDatabase(DocumentStoreConfiguration storeConfig)
         {
-            _documentStore = documentStore;
+            _documentStore = storeConfig.QueryStore;
         }
 
         public void Handle(AccountCreated message)

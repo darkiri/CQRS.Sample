@@ -1,8 +1,8 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using CQRS.Sample.Bus;
 using CQRS.Sample.Store;
 using Raven.Client;
+using Raven.Client.Document;
 using Raven.Client.Embedded;
 using StructureMap;
 
@@ -12,33 +12,45 @@ namespace CQRS.Sample.Bootstrapping
     {
         public static DocumentStoreConfiguration WithRavenStore()
         {
-            return new DocumentStoreConfiguration(new EmbeddableDocumentStore().Initialize());
+            return new PersistentStoreConfiguration();
         }
 
         public static DocumentStoreConfiguration InMemory()
         {
-            return new DocumentStoreConfiguration(new EmbeddableDocumentStore {RunInMemory = true}.Initialize());
+            return new InMemoryStoreConfiguration();
         }
     }
 
-    public class DocumentStoreConfiguration
+    public abstract class DocumentStoreConfiguration
     {
-        readonly IDocumentStore _documentStore;
+        protected const string EVENT_STORE_DATABASE = "EventStore";
+        protected const string QUERY_STORE_DATABASE = "QueryStore";
 
-        public DocumentStoreConfiguration(IDocumentStore documentStore)
-        {
-            _documentStore = documentStore;
-        }
-
-        public IDocumentStore DocumentStore
-        {
-            get { return _documentStore; }
-        }
+        public IDocumentStore EventStore { get; protected set; }
+        public IDocumentStore QueryStore { get; protected set; }
 
 
         public SubscirptionConfiguration WithAggregatesIn(Assembly assembly)
         {
             return new SubscirptionConfiguration(this, assembly);
+        }
+    }
+
+    public class PersistentStoreConfiguration : DocumentStoreConfiguration
+    {
+        public PersistentStoreConfiguration()
+        {
+            EventStore = new DocumentStore {ConnectionStringName = EVENT_STORE_DATABASE}.Initialize();
+            QueryStore = new DocumentStore {ConnectionStringName = QUERY_STORE_DATABASE}.Initialize();
+        }
+    }
+
+    public class InMemoryStoreConfiguration  : DocumentStoreConfiguration
+    {
+        public InMemoryStoreConfiguration()
+        {
+            EventStore = new EmbeddableDocumentStore {RunInMemory = true, DefaultDatabase = EVENT_STORE_DATABASE}.Initialize();
+            QueryStore = new EmbeddableDocumentStore {RunInMemory = true, DefaultDatabase = QUERY_STORE_DATABASE}.Initialize();
         }
     }
 
@@ -57,17 +69,16 @@ namespace CQRS.Sample.Bootstrapping
         {
             ObjectFactory.Initialize(x =>
             {
-                x.For<IDocumentStore>().Use(_storeConfiguration.DocumentStore);
                 x.For<IHandlerRepository>().Use(new HandlerRepository(_aggregatesAssembly));
-                x.For<IPersister>().Use<RavenPersister>();
+                x.For<DocumentStoreConfiguration>().Use(_storeConfiguration);
                 x.Scan(a =>
                 {
                     a.AssemblyContainingType<ServiceBus>();
                     a.Convention<SimpleConvention>();
                 });
             });
-            ObjectFactory.GetInstance<IServiceBus>().Start();
             ObjectFactory.AssertConfigurationIsValid();
+            ObjectFactory.GetInstance<IServiceBus>().Start();
         }
     }
 }

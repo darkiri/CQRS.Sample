@@ -1,10 +1,9 @@
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace CQRS.Sample.GUI.Models
 {
-    public class CreateAccountViewModel : IValidatableObject
+    public class CreateAccountViewModel
     {
         [Required(ErrorMessage = "Required")]
         [DataType(DataType.Date)]
@@ -17,18 +16,7 @@ namespace CQRS.Sample.GUI.Models
 
         [DisplayName("Repeat password")]
         [Required(ErrorMessage = "Required")]
+        [Compare("Password1", ErrorMessage = "Enter same password twice.")]
         public string Password2 { get; set; }
-
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-        {
-            if (Password1 == Password2)
-            {
-                yield return ValidationResult.Success;
-            }
-            else
-            {
-                yield return new ValidationResult("Enter same password twice", new[] {"Password1", "Password2"});
-            }
-        }
     }
 }

@@ -36,7 +36,7 @@ namespace CQRS.Sample.GUI.Controllers
         {
             if (ModelState.IsValid)
             {
-                return View();
+                return RedirectToAction("Login");
             } else
             {
                 return View(model);

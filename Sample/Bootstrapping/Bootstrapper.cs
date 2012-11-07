@@ -24,10 +24,10 @@ namespace CQRS.Sample.Bootstrapping
     public abstract class DocumentStoreConfiguration
     {
         protected const string EVENT_STORE_DATABASE = "EventStore";
-        protected const string QUERY_STORE_DATABASE = "QueryStore";
+        protected const string REPORTING_DATABASE = "Reporting";
 
         public IDocumentStore EventStore { get; protected set; }
-        public IDocumentStore QueryStore { get; protected set; }
+        public IDocumentStore ReportingDatabase { get; protected set; }
 
 
         public SubscriptionConfiguration WithAggregatesIn(Assembly assembly)
@@ -41,7 +41,7 @@ namespace CQRS.Sample.Bootstrapping
         public PersistentStoreConfiguration()
         {
             EventStore = new DocumentStore {ConnectionStringName = EVENT_STORE_DATABASE}.Initialize();
-            QueryStore = new DocumentStore {ConnectionStringName = QUERY_STORE_DATABASE}.Initialize();
+            ReportingDatabase = new DocumentStore {ConnectionStringName = REPORTING_DATABASE}.Initialize();
         }
     }
 
@@ -50,7 +50,7 @@ namespace CQRS.Sample.Bootstrapping
         public InMemoryStoreConfiguration()
         {
             EventStore = new EmbeddableDocumentStore {RunInMemory = true, DefaultDatabase = EVENT_STORE_DATABASE}.Initialize();
-            QueryStore = new EmbeddableDocumentStore {RunInMemory = true, DefaultDatabase = QUERY_STORE_DATABASE}.Initialize();
+            ReportingDatabase = new EmbeddableDocumentStore {RunInMemory = true, DefaultDatabase = REPORTING_DATABASE}.Initialize();
         }
     }
 

@@ -4,13 +4,13 @@ using Raven.Client;
 
 namespace CQRS.Sample.Reporting
 {
-    public class ReportingDatabase
+    public class ReportingDatabaseProjection
     {
         private readonly IDocumentStore _documentStore;
 
-        public ReportingDatabase(DocumentStoreConfiguration storeConfig)
+        public ReportingDatabaseProjection(DocumentStoreConfiguration storeConfig)
         {
-            _documentStore = storeConfig.QueryStore;
+            _documentStore = storeConfig.ReportingDatabase;
         }
 
         public void Handle(AccountCreated message)

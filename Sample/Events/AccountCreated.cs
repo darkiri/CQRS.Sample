@@ -1,4 +1,5 @@
 ﻿using System;
+using CQRS.Sample.Store;
 
 namespace CQRS.Sample.Events
 {

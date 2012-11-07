@@ -1,6 +1,5 @@
 ﻿using System;
 using CQRS.Sample.Bus;
-using CQRS.Sample.Events;
 
 namespace CQRS.Sample.Store
 {

@@ -3,6 +3,7 @@ using CQRS.Sample.Bootstrapping;
 using CQRS.Sample.Bus;
 using CQRS.Sample.Commands;
 using CQRS.Sample.GUI.Models;
+using CQRS.Sample.Reporting;
 using Raven.Client;
 
 namespace CQRS.Sample.GUI.Controllers
@@ -15,7 +16,7 @@ namespace CQRS.Sample.GUI.Controllers
         public AccountController(DocumentStoreConfiguration storeConfiguration, IServiceBus bus)
         {
             _bus = bus;
-            _reportingStore = storeConfiguration.QueryStore;
+            _reportingStore = storeConfiguration.ReportingDatabase;
         }
 
         public ActionResult Index()

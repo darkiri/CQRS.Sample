@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CQRS.Sample.Commands;
 using CQRS.Sample.Events;
+using CQRS.Sample.Store;
 
 namespace CQRS.Sample.Aggregates
 {

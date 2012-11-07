@@ -1,6 +1,6 @@
 using System;
 
-namespace CQRS.Sample
+namespace CQRS.Sample.Reporting
 {
     public class AccountDTO
     {

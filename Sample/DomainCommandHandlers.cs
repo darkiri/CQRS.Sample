@@ -6,12 +6,12 @@ using NLog;
 
 namespace CQRS.Sample
 {
-    public class Projections
+    public class DomainCommandHandlers
     {
-        private readonly Logger _logger = LogManager.GetLogger("Projections");
+        readonly Logger _logger = LogManager.GetLogger("DomainCommandHandlers");
         readonly EventStore _store;
 
-        public Projections(EventStore store)
+        public DomainCommandHandlers(EventStore store)
         {
             _store = store;
         }
@@ -25,7 +25,7 @@ namespace CQRS.Sample
                 var ar = new AccountAggregate(events, stream.Append);
                 ar.When(command);
                 stream.Commit();
-            } catch(Exception e)
+            } catch (Exception e)
             {
                 _logger.Error(e);
                 stream.Cancel();

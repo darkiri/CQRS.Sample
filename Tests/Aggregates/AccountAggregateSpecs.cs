@@ -18,7 +18,7 @@ namespace CQRS.Sample.Tests.Aggregates
         {
             Bootstrapper
                 .InMemory()
-                .WithAggregatesIn(typeof (Projections).Assembly)
+                .WithAggregatesIn(typeof (DomainCommandHandlers).Assembly)
                 .Start();
 
             _bus = ObjectFactory.GetInstance<IServiceBus>();

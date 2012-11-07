@@ -49,6 +49,7 @@ namespace CQRS.Sample.Store
             var revision = _pendingEvents.Any() ? _pendingEvents.Last().StreamRevision : Revision;
             _pendingEvents.Add(new StoreEvent
             {
+                Id = Guid.NewGuid(),
                 IsDispatched = false,
                 StreamRevision = revision + 1,
                 Body = evt,

@@ -1,6 +1,6 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Reflection;
 using CQRS.Sample.Bus;
-using CQRS.Sample.Store;
 using Raven.Client;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
@@ -30,9 +30,9 @@ namespace CQRS.Sample.Bootstrapping
         public IDocumentStore QueryStore { get; protected set; }
 
 
-        public SubscirptionConfiguration WithAggregatesIn(Assembly assembly)
+        public SubscriptionConfiguration WithAggregatesIn(Assembly assembly)
         {
-            return new SubscirptionConfiguration(this, assembly);
+            return new SubscriptionConfiguration(this, assembly);
         }
     }
 
@@ -54,15 +54,22 @@ namespace CQRS.Sample.Bootstrapping
         }
     }
 
-    public class SubscirptionConfiguration
+    public class SubscriptionConfiguration
     {
         readonly DocumentStoreConfiguration _storeConfiguration;
         readonly Assembly _aggregatesAssembly;
+        readonly IList<Assembly> _pluginAssemblies = new List<Assembly>();
 
-        public SubscirptionConfiguration(DocumentStoreConfiguration storeConfiguration, Assembly aggregatesAssembly)
+        public SubscriptionConfiguration(DocumentStoreConfiguration storeConfiguration, Assembly aggregatesAssembly)
         {
             _storeConfiguration = storeConfiguration;
             _aggregatesAssembly = aggregatesAssembly;
+        }
+
+        public SubscriptionConfiguration WithPluginsIn(Assembly pluginAssembly)
+        {
+            _pluginAssemblies.Add(pluginAssembly);
+            return this;
         }
 
         public void Start()
@@ -73,7 +80,11 @@ namespace CQRS.Sample.Bootstrapping
                 x.For<DocumentStoreConfiguration>().Use(_storeConfiguration);
                 x.Scan(a =>
                 {
-                    a.AssemblyContainingType<ServiceBus>();
+                    a.AssemblyContainingType<Bootstrapper>();
+                    foreach (var assembly in _pluginAssemblies)
+                    {
+                        a.Assembly(assembly);
+                    }
                     a.Convention<SimpleConvention>();
                 });
             });

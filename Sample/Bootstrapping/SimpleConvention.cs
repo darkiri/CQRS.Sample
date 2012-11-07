@@ -17,7 +17,7 @@ namespace CQRS.Sample.Bootstrapping
                 var interfaceType = type.GetInterfaces().FirstOrDefault(iface => iface.Name.EndsWith(m.Value));
                 if (null != interfaceType)
                 {
-                    registry.AddType(interfaceType, type);
+                    registry.AddType(interfaceType, type, type.Name);
                 }
             }
         }

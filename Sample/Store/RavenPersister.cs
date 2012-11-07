@@ -83,7 +83,8 @@ namespace CQRS.Sample.Store
                     .Where(c => c.Events.Any(e => !e.IsDispatched))
                     .ToArray()
                     .SelectMany(c => c.Events)
-                    .Where(e => !e.IsDispatched);
+                    .Where(e => !e.IsDispatched)
+                    .OrderBy(e => e.StreamRevision);
             }
         }
 

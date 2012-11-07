@@ -1,15 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Web;
-using System.Web.Mvc;
+﻿using System.Web.Mvc;
+using CQRS.Sample.Bootstrapping;
+using CQRS.Sample.Bus;
+using CQRS.Sample.Commands;
 using CQRS.Sample.GUI.Models;
+using Raven.Client;
 
 namespace CQRS.Sample.GUI.Controllers
 {
     public class AccountController : Controller
     {
+        readonly IServiceBus _bus;
+        IDocumentStore _reportingStore;
+
+        public AccountController(DocumentStoreConfiguration storeConfiguration, IServiceBus bus)
+        {
+            _bus = bus;
+            _reportingStore = storeConfiguration.QueryStore;
+        }
+
         public ActionResult Index()
         {
             return View();
@@ -36,6 +44,12 @@ namespace CQRS.Sample.GUI.Controllers
         {
             if (ModelState.IsValid)
             {
+                _bus.Publish(new CreateAccount
+                {
+                    Email = model.Email,
+                    Password = model.Password1,
+                });
+                _bus.Commit();
                 return RedirectToAction("Login");
             } else
             {

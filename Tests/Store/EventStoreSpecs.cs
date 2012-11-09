@@ -30,8 +30,8 @@ namespace CQRS.Sample.Tests.Store
                 .Setup(p => p.GetEvents(StreamId, 0, 1))
                 .Returns(new[]
                 {
-                    Event(0, "first"), Event(1, "second"),
-                }.ToStoreEvents());
+                    Event("first"), Event("second"),
+                }.ToStoreEvents(1));
         }
 
         Establish context = SetupPersiter;
@@ -43,7 +43,7 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (EventStream))]
     public class when_event_appended_to_the_stream : event_store_context
     {
-        Because of = () => WithStream(1).Append(Event(2, "second"));
+        Because of = () => WithStream(1).Append(Event("second"));
 
         It should_not_persist_event = () => VerifyPersistEventsCall(0.Times());
         It should_have_uncommitted_event = () => Assert.That(Stream.UncommittedEvents.Count(), Is.EqualTo(1));
@@ -53,7 +53,7 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (EventStream))]
     public class when_stream_committed : event_store_context
     {
-        Establish context = () => WithStream(0).Append(Event(1, "first"));
+        Establish context = () => WithStream(0).Append(Event("first"));
 
         Because of = () => Stream.Commit();
 
@@ -67,7 +67,7 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (EventStream))]
     public class when_stream_canceled : event_store_context
     {
-        Establish context = () => WithStream(10).Append(Event(11, "eleventh"));
+        Establish context = () => WithStream(10).Append(Event("eleventh"));
 
         Because of = () =>
         {
@@ -93,17 +93,17 @@ namespace CQRS.Sample.Tests.Store
                 .Setup(p => p.GetEvents(StreamId, 10, Int32.MaxValue))
                 .Returns(new[]
                 {
-                    Event(10, "tenth"),
-                    Event(11, "eleventh"),
-                    Event(12, "twelwth"),
-                }.ToStoreEvents());
+                    Event("tenth"),
+                    Event("eleventh"),
+                    Event("twelwth"),
+                }.ToStoreEvents(12));
             WithStream(10)
-                .Append(Event(11, "another eleventh"));
+                .Append(Event("another eleventh"));
         };
 
         Because of = () => Stream.Commit();
 
-        It should_refresch_revision = () => Assert.That(Stream.Revision, Is.EqualTo(12));
+        It should_refresh_revision = () => Assert.That(Stream.Revision, Is.EqualTo(12));
         It should_not_persist_event = () => Assert.That(Stream.UncommittedEvents.Count(), Is.EqualTo(1));
         It should_not_trigger_dispatcher = () => VerifyDispatchCall(0.Times());
     }
@@ -111,7 +111,7 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (EventStream))]
     public class when_events_are_requested : event_store_context
     {
-        Because of = () => WithStream(3).GetEvents(1, 3);
+        Because of = () => WithStream(3);
         It should_load_events_from_persistence = () => VerifyLoadingEventsCall(1, 3, 1.Times());
     }
 
@@ -120,7 +120,7 @@ namespace CQRS.Sample.Tests.Store
     public class when_event_dispatched : event_store_context
     {
         static SimpleDispatcher _dispatcher;
-        static StoreEvent SomeEvent = new StoreEvent{ Id= Guid.NewGuid(), Body = Event(10, "tenth"), StreamRevision = 10};
+        static StoreEvent SomeEvent = new StoreEvent{ Id= Guid.NewGuid(), Body = Event("tenth"), StreamRevision = 10};
 
         static Mock<IServiceBus> BusMock;
 

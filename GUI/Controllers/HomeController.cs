@@ -2,6 +2,7 @@
 
 namespace CQRS.Sample.GUI.Controllers
 {
+    [Authorize]
     public class HomeController : Controller
     {
         //

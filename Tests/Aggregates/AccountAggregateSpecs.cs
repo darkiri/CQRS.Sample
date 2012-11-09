@@ -1,29 +1,16 @@
-﻿using CQRS.Sample.Aggregates;
-using CQRS.Sample.Bootstrapping;
-using CQRS.Sample.Bus;
+﻿using System;
+using CQRS.Sample.Aggregates;
 using CQRS.Sample.Commands;
 using CQRS.Sample.Events;
 using Machine.Specifications;
 using NUnit.Framework;
-using StructureMap;
 
 namespace CQRS.Sample.Tests.Aggregates
 {
     [Subject(typeof (AccountAggregate))]
-    public class when_create_account_requested
+    public class when_create_account_requested : AggregateContext
     {
-        static IServiceBus _bus;
-
-        Establish context = () =>
-        {
-            Bootstrapper
-                .InMemory()
-                .WithAggregatesIn(typeof (DomainCommandHandlers).Assembly)
-                .Start();
-
-            _bus = ObjectFactory.GetInstance<IServiceBus>();
-            _bus.Subscribe<AccountCreated>(OnAccountCreated);
-        };
+        Establish context = () => Bus.Subscribe<AccountCreated>(OnAccountCreated);
 
         static string Email;
         static string Hash;
@@ -34,17 +21,40 @@ namespace CQRS.Sample.Tests.Aggregates
             Hash = msg.PasswordHash;
         }
 
-        Because of = () =>
-        {
-            _bus.Publish(new CreateAccount
-            {
-                Email = "em@ai.il",
-                Password = "Swordfish",
-            });
-            _bus.Commit();
-        };
+        Because of = () => CreateAccount("em@ai.il", "Swordfish");
 
         It should_set_email = () => Assert.That(Email, Is.EqualTo("em@ai.il"));
         It should_set_password_hash = () => Assert.True(PasswordHash.ValidatePassword("Swordfish", Hash));
     }
+
+
+    [Subject(typeof(AccountAggregate))]
+    public class when_password_change_requested: AggregateContext
+    {
+        Establish context = () =>
+        {
+            AccountStreamID = CreateAccount("em@ai.il", "Swordfish");
+            Bus.Subscribe<PasswordChanged>(OnPasswordChanged);
+        };
+
+        protected static Guid AccountStreamID;
+        protected static string NewPasswordHash;
+
+        static void OnPasswordChanged(PasswordChanged msg)
+        {
+            NewPasswordHash = msg.PasswordHash;
+        }
+
+        Because of = () =>
+        {
+            Bus.Publish(new ChangePassword(AccountStreamID)
+            {
+                NewPassword = "fish",
+            });
+            Bus.Commit();
+        };
+
+        It should_have_new_password = () => Assert.True(PasswordHash.ValidatePassword("fish", NewPasswordHash));
+    }
+
 }

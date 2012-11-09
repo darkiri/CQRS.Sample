@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CQRS.Sample.Events;
 
 namespace CQRS.Sample.Store
 {
@@ -17,7 +16,6 @@ namespace CQRS.Sample.Store
             _persister = persister;
             _dispatcher = dispatcher;
             StreamId = streamId;
-            Revision = revision;
             
             PopulateStream(_persister.GetEvents(StreamId, 0, revision).ToList());
         }
@@ -31,19 +29,11 @@ namespace CQRS.Sample.Store
             get { return _pendingEvents; }
         }
 
-        public IEnumerable<StoreEvent> CommittedEvents
+        public IEnumerable<IEvent> CommittedEvents
         {
-            get { return _committedEvents; }
+            get { return _committedEvents.Select(e => e.Body); }
         }
 
-        public IEnumerable<IEvent> GetEvents(int minRevision, int maxRevision)
-        {
-            return _persister
-                .GetEvents(StreamId, minRevision, maxRevision)
-                .Select(e => e.Body)
-                .ToArray();
-        }
- 
         public void Append(IEvent evt)
         {
             var revision = _pendingEvents.Any() ? _pendingEvents.Last().StreamRevision : Revision;
@@ -70,10 +60,8 @@ namespace CQRS.Sample.Store
                 }
                 catch (OptimisticConcurrencyException)
                 {
-                    Revision = _persister
-                        .GetEvents(StreamId, Revision, Int32.MaxValue)
-                        .Select(e => e.StreamRevision)
-                        .Max();
+                    var newEvents = _persister.GetEvents(StreamId, Revision + 1, Int32.MaxValue);
+                    PopulateStream(newEvents);
                 }
             }
         }
@@ -83,8 +71,8 @@ namespace CQRS.Sample.Store
             foreach (var evt in events)
             {
                 _committedEvents.Add(evt);
-                Revision++;
             }
+            Revision = _committedEvents.Any() ? _committedEvents.Last().StreamRevision : 0;
         }
 
         public void Cancel()

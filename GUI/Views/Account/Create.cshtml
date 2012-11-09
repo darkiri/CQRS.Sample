@@ -11,23 +11,23 @@
 
     <fieldset>
         <legend>Create Account</legend>
-        <ol>
+        <ul>
             <li>
                 @Html.LabelFor(m => m.Email)
-                @Html.TextBoxFor(m => m.Email)
+                @Html.EditorFor(m => m.Email)
                 @Html.ValidationMessageFor(m => m.Email)
             </li>
             <li>
                 @Html.LabelFor(m => m.Password1)
-                @Html.PasswordFor(m => m.Password1)
+                @Html.EditorFor(m => m.Password1)
                 @Html.ValidationMessageFor(m => m.Password1)
             </li>
             <li>
                 @Html.LabelFor(m => m.Password2)
-                @Html.PasswordFor(m => m.Password2)
+                @Html.EditorFor(m => m.Password2)
                 @Html.ValidationMessageFor(m => m.Password2)
             </li>
-        </ol>
+        </ul>
         <input type="submit" value="Submit"/>
     </fieldset>
 }

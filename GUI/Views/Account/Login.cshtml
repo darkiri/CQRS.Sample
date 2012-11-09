@@ -1,4 +1,4 @@
-﻿@model CQRS.Sample.Reporting.AccountDTO
+﻿@model CQRS.Sample.GUI.Models.LoginAccountViewModel
 
 @{
     ViewBag.Title = "Login";
@@ -11,7 +11,7 @@
 
     <fieldset>
         <legend>Login</legend>
-        <ol>
+        <ul>
             <li>
                 @Html.LabelFor(m => m.Email)
                 @Html.TextBoxFor(m => m.Email)
@@ -22,7 +22,7 @@
                 @Html.PasswordFor(m => m.Password)
                 @Html.ValidationMessageFor(m => m.Password)
             </li>
-        </ol>
+        </ul>
         <input type="submit" value="Log in"/>
     </fieldset>
     <p>

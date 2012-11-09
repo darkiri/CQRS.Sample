@@ -22,7 +22,7 @@ namespace CQRS.Sample.Store
 
         public IEventStream OpenStream(Guid streamId)
         {
-            return new EventStream(_persister, _commitDispatcher, streamId, 0);
+            return new EventStream(_persister, _commitDispatcher, streamId, Int32.MaxValue);
         }
    }
 }

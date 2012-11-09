@@ -9,8 +9,7 @@ namespace CQRS.Sample.Store
         Guid StreamId { get; }
         int Revision { get; }
         IEnumerable<StoreEvent> UncommittedEvents { get; }
-        IEnumerable<StoreEvent> CommittedEvents { get; }
+        IEnumerable<IEvent> CommittedEvents { get; }
         void Append(IEvent evt);
-        IEnumerable<IEvent> GetEvents(int minRevision, int maxRevision);
     }
 }

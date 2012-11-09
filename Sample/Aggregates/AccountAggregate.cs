@@ -40,7 +40,13 @@ namespace CQRS.Sample.Aggregates
             Apply(accountCreated);
         }
 
-        void Apply(AccountCreated accountCreated)
+        public void When(ChangePassword command)
+        {
+            var passwordChanged = new PasswordChanged(command.StreamId, PasswordHash.CreateHash(command.NewPassword));
+            Apply(passwordChanged);
+        }
+
+        void Apply(IEvent accountCreated)
         {
             _publishAction(accountCreated);
         }

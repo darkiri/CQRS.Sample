@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CQRS.Sample.Events;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using Raven.Abstractions.Exceptions;
@@ -12,7 +11,7 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_persist_events : raven_persistence_context
     {
-        static StoreEvent SomeEvent = AsStoreEvent(new StringIntEvent {A = "123", B = 456});
+        static StoreEvent SomeEvent = AsStoreEvent(new StringIntEvent {A = "123", B = 456}, 0);
         Because of = () => PersistSomeEvents(new[] {SomeEvent});
         It should_store_events_in_the_database = () => AssertEventInStore(SomeEvent);
     }
@@ -32,9 +31,9 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_persisting_events_for_exisitng_revision : raven_persistence_context
     {
-        static StoreEvent second = AsStoreEvent(Event(2, "second"));
-        static StoreEvent third = AsStoreEvent(Event(3, "third"));
-        static StoreEvent anotherSecond = AsStoreEvent(Event(2, "another second"));
+        static StoreEvent second = AsStoreEvent(Event("second"), 2);
+        static StoreEvent third = AsStoreEvent(Event("third"), 3);
+        static StoreEvent anotherSecond = AsStoreEvent(Event("another second"), 2);
         static Exception Exception;
 
         Establish context = () => PersistSomeEvents(new[] {second});
@@ -52,15 +51,15 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_loading_events : raven_persistence_context
     {
-        static StoreEvent FirstEvent = AsStoreEvent(Event(1, "first"));
-        static StoreEvent SecondEvent = AsStoreEvent(Event(2, "second"));
+        static StoreEvent FirstEvent = AsStoreEvent(Event("first"), 1);
+        static StoreEvent SecondEvent = AsStoreEvent(Event("second"), 2);
 
         static List<StoreEvent> SampleEvents = new List<StoreEvent>
                                                {
-                                                   AsStoreEvent(Event(0, "zero")),
+                                                   AsStoreEvent(Event("zero"), 0),
                                                    FirstEvent,
                                                    SecondEvent,
-                                                   AsStoreEvent(Event(3, "third")),
+                                                   AsStoreEvent(Event("third"), 3),
                                                };
 
         Because of = () => PersistSomeEvents(SampleEvents);
@@ -72,7 +71,7 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_marking_event_as_dispatched : raven_persistence_context
     {
-        static StoreEvent TheEvent = AsStoreEvent(Event(0, "root"));
+        static StoreEvent TheEvent = AsStoreEvent(Event("root"), 0);
         Establish context = () => PersistSomeEvents(new[] {TheEvent});
         Because of = () => Persister.MarkAsDispatched(TheEvent);
 
@@ -83,8 +82,8 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_requesting_undispatched_events : raven_persistence_context
     {
-        static StoreEvent FirstEvent = AsStoreEvent(Event(1, "first"));
-        static StoreEvent SecondEvent = AsStoreEvent(Event(2, "second"));
+        static StoreEvent FirstEvent = AsStoreEvent(Event("first"), 1);
+        static StoreEvent SecondEvent = AsStoreEvent(Event("second"), 2);
 
         static List<StoreEvent> SampleEvents = new List<StoreEvent>
                                                {

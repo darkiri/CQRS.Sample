@@ -11,8 +11,8 @@ namespace CQRS.Sample.Tests.Store
     public class event_based_context {
         protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC737");
 
-        protected static IdentifiableEvent Event(int revision, string payload) {
-            return new StringEvent(revision, payload);
+        protected static IdentifiableEvent Event(string payload) {
+            return new StringEvent(payload);
         }
     }
 
@@ -29,15 +29,12 @@ namespace CQRS.Sample.Tests.Store
         {
             return null != other && Id == other.Id;
         }
-
-        public int Version { get; protected set; }
     }
 
     public class StringEvent : IdentifiableEvent
     {
-        public StringEvent(int version, string payload)
+        public StringEvent(string payload)
         {
-            Version = version;
             Payload = payload;
         }
 
@@ -94,11 +91,11 @@ namespace CQRS.Sample.Tests.Store
 
     public static class EventStoreContextExtensions
     {
-        public static IEnumerable<StoreEvent> ToStoreEvents(this IEnumerable<IEvent> events)
+        public static IEnumerable<StoreEvent> ToStoreEvents(this IEnumerable<IEvent> events, int version)
         {
             return events.Select(evt => new StoreEvent
             {
-                StreamRevision = evt.Version,
+                StreamRevision = version,
                 Body = evt,
             });
         }

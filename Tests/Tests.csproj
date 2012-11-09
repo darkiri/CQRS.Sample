@@ -112,6 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Aggregates\AccountAggregateSpecs.cs" />
+    <Compile Include="Aggregates\AggregateContext.cs" />
     <Compile Include="Bus\BusContext.cs" />
     <Compile Include="Bus\BusSpecs.cs" />
     <Compile Include="Store\EventStoreContext.cs" />

@@ -6,7 +6,7 @@ namespace CQRS.Sample.GUI.Models
     public class CreateAccountViewModel
     {
         [Required(ErrorMessage = "Required")]
-        [DataType(DataType.Date)]
+        [DataType(DataType.EmailAddress)]
         [EmailAddress(ErrorMessage = "Not a valid email")]
         public string Email { get; set; }
 
@@ -18,5 +18,15 @@ namespace CQRS.Sample.GUI.Models
         [Required(ErrorMessage = "Required")]
         [Compare("Password1", ErrorMessage = "Enter same password twice.")]
         public string Password2 { get; set; }
+    }
+
+    public class LoginAccountViewModel
+    {
+        [Required(ErrorMessage = "Required")]
+        [DataType(DataType.EmailAddress)]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "Required")]
+        public string Password { get; set; }
     }
 }

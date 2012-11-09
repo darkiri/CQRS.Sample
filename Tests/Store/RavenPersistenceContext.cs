@@ -84,12 +84,12 @@ namespace CQRS.Sample.Tests.Store
             return events;
         }
 
-        protected static StoreEvent AsStoreEvent(IEvent evt)
+        protected static StoreEvent AsStoreEvent(IEvent evt, int version)
         {
             return new StoreEvent
             {
-                Id =Guid.NewGuid(),
-                StreamRevision = evt.Version,
+                Id = Guid.NewGuid(),
+                StreamRevision = version,
                 Body = evt,
             };
         }

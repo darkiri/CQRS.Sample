@@ -1,38 +1,58 @@
-﻿using System.Web.Mvc;
-using CQRS.Sample.Bootstrapping;
+﻿using System.Linq;
+using System.Web.Mvc;
+using System.Web.Security;
 using CQRS.Sample.Bus;
 using CQRS.Sample.Commands;
 using CQRS.Sample.GUI.Models;
 using CQRS.Sample.Reporting;
-using Raven.Client;
 
 namespace CQRS.Sample.GUI.Controllers
 {
     public class AccountController : Controller
     {
+        readonly AccountQuery _accountQuery;
         readonly IServiceBus _bus;
-        IDocumentStore _reportingStore;
 
-        public AccountController(DocumentStoreConfiguration storeConfiguration, IServiceBus bus)
+        public AccountController(AccountQuery accountQuery,
+                                 IServiceBus bus)
         {
+            _accountQuery = accountQuery;
             _bus = bus;
-            _reportingStore = storeConfiguration.ReportingDatabase;
         }
 
-        public ActionResult Index()
+        public ActionResult Login(string returnUrl)
         {
+            ViewBag.ReturnUrl = returnUrl;
             return View();
         }
 
-        public ActionResult Login()
+        [HttpPost]
+        public ActionResult Login(LoginAccountViewModel model, string returnUrl)
         {
-            return Index();
+            if (ModelState.IsValid && ValidateCredentials(model))
+            {
+                FormsAuthentication.SetAuthCookie(model.Email, false);
+                if (Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
+                else
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+            }
+            else
+            {
+                ModelState.AddModelError(string.Empty, "The user name or password provided is incorrect.");
+                return View(model);
+            }
         }
 
-        [HttpPost]
-        public ActionResult Login(AccountDTO model)
+        private bool ValidateCredentials(LoginAccountViewModel model)
         {
-            return RedirectToAction("Index", "Home");
+            return _accountQuery
+                .Execute(model.Email)
+                .Any(a => PasswordHash.ValidatePassword(model.Password, a.PasswordHash));
         }
 
         public ActionResult Create()
@@ -45,17 +65,27 @@ namespace CQRS.Sample.GUI.Controllers
         {
             if (ModelState.IsValid)
             {
-                _bus.Publish(new CreateAccount
+                if (AccountAlreadyExists(model.Email))
                 {
-                    Email = model.Email,
-                    Password = model.Password1,
-                });
-                _bus.Commit();
-                return RedirectToAction("Login");
-            } else
-            {
-                return View(model);
+                    ModelState.AddModelError(string.Empty, "An account with this Email already exists.");
+                }
+                else
+                {
+                    _bus.Publish(new CreateAccount
+                    {
+                        Email = model.Email,
+                        Password = model.Password1,
+                    });
+                    _bus.Commit();
+                    return RedirectToAction("Login");
+                }
             }
+            return View(model);
+        }
+
+        bool AccountAlreadyExists(string email)
+        {
+            return _accountQuery.Execute(email).Any();
         }
     }
 }

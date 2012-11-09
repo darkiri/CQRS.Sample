@@ -18,14 +18,24 @@ namespace CQRS.Sample
 
         public void Handle(CreateAccount command)
         {
-            var stream = _store.OpenStream(command.StreamId);
-            var events = stream.GetEvents(0, Int32.MaxValue);
+            ProceedAccountCommand(command.StreamId, ar => ar.When(command));
+        }
+
+        public void Handle(ChangePassword command)
+        {
+            ProceedAccountCommand(command.StreamId, ar => ar.When(command));
+        }
+
+        void ProceedAccountCommand(Guid streamId, Action<AccountAggregate> handleCommand)
+        {
+            var stream = _store.OpenStream(streamId);
             try
             {
-                var ar = new AccountAggregate(events, stream.Append);
-                ar.When(command);
+                var ar = new AccountAggregate(stream.CommittedEvents, stream.Append);
+                handleCommand(ar);
                 stream.Commit();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 _logger.Error(e);
                 stream.Cancel();

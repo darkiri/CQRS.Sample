@@ -91,11 +91,11 @@ namespace CQRS.Sample.Tests.Store
 
     public static class EventStoreContextExtensions
     {
-        public static IEnumerable<StoreEvent> ToStoreEvents(this IEnumerable<IEvent> events, int version)
+        public static IEnumerable<StoreEvent> ToStoreEvents(this IEnumerable<IEvent> events, int startVersion = 0)
         {
             return events.Select(evt => new StoreEvent
             {
-                StreamRevision = version,
+                StreamRevision = startVersion++,
                 Body = evt,
             });
         }

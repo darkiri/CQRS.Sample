@@ -29,7 +29,7 @@ namespace CQRS.Sample.GUI.Controllers
         [HttpPost]
         public ActionResult Login(LoginAccountViewModel model, string returnUrl)
         {
-            if (ModelState.IsValid && ValidateCredentials(model))
+            if (ModelState.IsValid && ValidateCredentials(model.Email, model.Password))
             {
                 FormsAuthentication.SetAuthCookie(model.Email, false);
                 if (Url.IsLocalUrl(returnUrl))
@@ -48,11 +48,11 @@ namespace CQRS.Sample.GUI.Controllers
             }
         }
 
-        private bool ValidateCredentials(LoginAccountViewModel model)
+        private bool ValidateCredentials(string email, string password)
         {
             return _accountQuery
-                .Execute(model.Email)
-                .Any(a => PasswordHash.ValidatePassword(model.Password, a.PasswordHash));
+                .Execute(email)
+                .Any(a => PasswordHash.ValidatePassword(password, a.PasswordHash));
         }
 
         public ActionResult Create()
@@ -86,6 +86,35 @@ namespace CQRS.Sample.GUI.Controllers
         bool AccountAlreadyExists(string email)
         {
             return _accountQuery.Execute(email).Any();
+        }
+
+        public ActionResult ChangePassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult ChangePassword(ChangePasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                if (ValidateCredentials(User.Identity.Name, model.Password))
+                {
+
+                    _bus.Publish(new ChangePassword(_accountQuery.Execute(User.Identity.Name).First().StreamId)
+                                 {
+                                     OldPassword = model.Password,
+                                     NewPassword = model.Password1,
+                                 });
+                    _bus.Commit();
+                    return RedirectToAction("Index", "Home");
+                }
+                else
+                {
+                    ModelState.AddModelError("Password", "Password is incorrect");
+                }
+            }
+            return View(model);
         }
     }
 }

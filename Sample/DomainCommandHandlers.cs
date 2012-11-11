@@ -37,7 +37,7 @@ namespace CQRS.Sample
             }
             catch (Exception e)
             {
-                _logger.Error(e);
+                _logger.ErrorException("Cannot proceed command", e);
                 stream.Cancel();
             }
         }

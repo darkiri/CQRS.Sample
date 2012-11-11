@@ -60,7 +60,7 @@ namespace CQRS.Sample.Store
                 }
                 catch (OptimisticConcurrencyException)
                 {
-                    var newEvents = _persister.GetEvents(StreamId, Revision + 1, Int32.MaxValue);
+                    var newEvents = _persister.GetEvents(StreamId, Revision, Int32.MaxValue);
                     PopulateStream(newEvents);
                 }
             }
@@ -71,8 +71,8 @@ namespace CQRS.Sample.Store
             foreach (var evt in events)
             {
                 _committedEvents.Add(evt);
+                Revision++;
             }
-            Revision = _committedEvents.Any() ? _committedEvents.Last().StreamRevision : 0;
         }
 
         public void Cancel()

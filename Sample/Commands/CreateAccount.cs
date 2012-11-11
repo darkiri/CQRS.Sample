@@ -23,6 +23,7 @@ namespace CQRS.Sample.Commands
             StreamId = accountStreamId;
         }
 
+        public string OldPassword { get; set; }
         public string NewPassword { get; set; }
     }
 }

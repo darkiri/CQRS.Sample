@@ -29,4 +29,19 @@ namespace CQRS.Sample.GUI.Models
         [Required(ErrorMessage = "Required")]
         public string Password { get; set; }
     }
+
+    public class ChangePasswordViewModel
+    {
+        [Required(ErrorMessage = "Required")]
+        public string Password { get; set; }
+
+        [DisplayName("New password")]
+        [Required(ErrorMessage = "Required")]
+        public string Password1 { get; set; }
+
+        [DisplayName("Repeat password")]
+        [Required(ErrorMessage = "Required")]
+        [Compare("Password1", ErrorMessage = "Enter same password twice.")]
+        public string Password2 { get; set; }
+    }
 }

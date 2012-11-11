@@ -29,14 +29,46 @@ namespace CQRS.Sample.Tests.Aggregates
 
 
     [Subject(typeof(AccountAggregate))]
-    public class when_password_change_requested: AggregateContext
+    public class when_password_change_requested_and_old_password_wrong: AggregateContext
     {
+        protected static Guid AccountStreamID;
+        protected static bool PasswordChanged;
+        protected static bool FailureNotificationReceived;
+
+        static void OnPasswordChanged(PasswordChanged msg)
+        {
+            PasswordChanged = true;
+        }
+
+        static void OnAccountChangeFailed(AccountChangeFailed obj)
+        {
+            FailureNotificationReceived = true;
+        }
+
         Establish context = () =>
         {
             AccountStreamID = CreateAccount("em@ai.il", "Swordfish");
             Bus.Subscribe<PasswordChanged>(OnPasswordChanged);
+            Bus.Subscribe<AccountChangeFailed>(OnAccountChangeFailed);
         };
 
+        Because of = () =>
+        {
+            Bus.Publish(new ChangePassword(AccountStreamID)
+            {
+                OldPassword = "Sword",
+                NewPassword = "fish",
+            });
+            Bus.Commit();
+        };
+
+        It should_not_change_password = () => Assert.False(PasswordChanged);
+        It should_notify_that_change_failed = () => Assert.True(FailureNotificationReceived);
+    }
+
+    [Subject(typeof(AccountAggregate))]
+    public class when_password_change_requested: AggregateContext
+    {
         protected static Guid AccountStreamID;
         protected static string NewPasswordHash;
 
@@ -45,10 +77,17 @@ namespace CQRS.Sample.Tests.Aggregates
             NewPasswordHash = msg.PasswordHash;
         }
 
+        Establish context = () =>
+        {
+            AccountStreamID = CreateAccount("em@ai.il", "Swordfish");
+            Bus.Subscribe<PasswordChanged>(OnPasswordChanged);
+        };
+
         Because of = () =>
         {
             Bus.Publish(new ChangePassword(AccountStreamID)
             {
+                OldPassword = "Swordfish",
                 NewPassword = "fish",
             });
             Bus.Commit();

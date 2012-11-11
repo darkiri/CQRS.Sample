@@ -29,6 +29,17 @@ namespace CQRS.Sample.Reporting
                 session.SaveChanges();
             }
         }
+
+
+        public void Handle(PasswordChanged message)
+        {
+            using (var session = _documentStore.OpenSession())
+            {
+                var account = session.Query<AccountDTO>().Single(a => a.StreamId == message.StreamId);
+                account.PasswordHash = message.PasswordHash;
+                session.SaveChanges();
+            }
+        }
     }
 
 

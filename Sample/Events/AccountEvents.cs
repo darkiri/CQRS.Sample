@@ -4,7 +4,7 @@ namespace CQRS.Sample.Events
 {
     public class AccountCreated : DomainEvent
     {
-        public AccountCreated(Guid streamId, int version, string email, string passwordHash) : base(streamId)
+        public AccountCreated(Guid streamId, string email, string passwordHash) : base(streamId)
         {
             Email = email;
             PasswordHash = passwordHash;
@@ -22,5 +22,10 @@ namespace CQRS.Sample.Events
         }
 
         public string PasswordHash { get; private set; }
+    }
+
+    public class AccountChangeFailed : DomainEvent
+    {
+        public AccountChangeFailed(Guid streamId) : base(streamId) {}
     }
 }

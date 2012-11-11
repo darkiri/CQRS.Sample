@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using CQRS.Sample.Commands;
 using CQRS.Sample.Events;
 using CQRS.Sample.Store;
@@ -9,13 +10,42 @@ namespace CQRS.Sample.Aggregates
 {
     public class AccountAggregate
     {
-        readonly IEnumerable<IEvent> _events;
         readonly Action<IEvent> _publishAction;
+
+        private string _email;
+        private string _passwordHash;
 
         public AccountAggregate(IEnumerable<IEvent> events, Action<IEvent> publishAction)
         {
-            _events = events;
+            LoadFromHistory(events);
             _publishAction = publishAction;
+        }
+
+        private void LoadFromHistory(IEnumerable<IEvent> events)
+        {
+            foreach (var evt in events)
+            {
+                ApplyFromHistory(evt);
+            }
+        }
+
+        void ApplyFromHistory(IEvent evt)
+        {
+            ApplyEvent(evt, _ => { });
+        }
+
+        void ApplyAndPublish(IEvent evt)
+        {
+            ApplyEvent(evt, _publishAction);
+        }
+
+        void ApplyEvent(IEvent evt, Action<IEvent> continuation)
+        {
+            GetType()
+                .GetMethod("Apply", BindingFlags.NonPublic | BindingFlags.Instance,
+                           null, new Type[] {evt.GetType()}, null)
+                .Invoke(this, new object[] {evt});
+            continuation(evt);
         }
 
         public void When(CreateAccount command)
@@ -25,30 +55,50 @@ namespace CQRS.Sample.Aggregates
             // It is unlikely to have duplicate emails
             // Still there will be an async email validation, just for fun
 
-            if (_events.Any())
+            if (AccountnExists())
             {
-                throw new Exception("Account exists");
+                ApplyAndPublish(new AccountChangeFailed(command.StreamId));
             }
+            else
+            {
+                ApplyAndPublish(new AccountCreated (
+                                    command.StreamId,
+                                    command.Email,
+                                    PasswordHash.CreateHash(command.Password)));
+            }
+        }
 
-            var accountCreated = new AccountCreated
-            (
-                command.StreamId,
-                0,
-                command.Email,
-                PasswordHash.CreateHash(command.Password)
-            );
-            Apply(accountCreated);
+        bool AccountnExists()
+        {
+            return !String.IsNullOrEmpty(_email);
         }
 
         public void When(ChangePassword command)
         {
-            var passwordChanged = new PasswordChanged(command.StreamId, PasswordHash.CreateHash(command.NewPassword));
-            Apply(passwordChanged);
+            if (!PasswordHash.ValidatePassword(command.OldPassword, _passwordHash))
+            {
+                ApplyAndPublish(new AccountChangeFailed(command.StreamId));
+            }
+            else
+            {
+                _passwordHash = command.NewPassword;
+
+                ApplyAndPublish(new PasswordChanged(command.StreamId, PasswordHash.CreateHash(command.NewPassword)));
+            }
         }
 
-        void Apply(IEvent accountCreated)
+        private void Apply(AccountChangeFailed evt)
         {
-            _publishAction(accountCreated);
+        }
+
+        private void Apply(AccountCreated evt)
+        {
+            _email = evt.Email;
+            _passwordHash = evt.PasswordHash;
+        }
+        private void Apply(PasswordChanged evt)
+        {
+            _passwordHash = evt.PasswordHash;
         }
     }
 }

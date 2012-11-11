@@ -17,5 +17,10 @@ namespace CQRS.Sample.GUI.Controllers
         {
             return RedirectToAction("Login", "Account");
         }
+
+        public ActionResult ChangePassword()
+        {
+            return RedirectToAction("ChangePassword", "Account");
+        }
     }
 }

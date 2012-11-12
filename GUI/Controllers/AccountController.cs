@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Web.Mvc;
 using System.Web.Security;
 using CQRS.Sample.Bus;
@@ -10,8 +11,8 @@ namespace CQRS.Sample.GUI.Controllers
 {
     public class AccountController : Controller
     {
-        readonly AccountQuery _accountQuery;
-        readonly IServiceBus _bus;
+        private readonly AccountQuery _accountQuery;
+        private readonly IServiceBus _bus;
 
         public AccountController(AccountQuery accountQuery,
                                  IServiceBus bus)
@@ -83,7 +84,7 @@ namespace CQRS.Sample.GUI.Controllers
             return View(model);
         }
 
-        bool AccountAlreadyExists(string email)
+        private bool AccountAlreadyExists(string email)
         {
             return _accountQuery.Execute(email).Any();
         }
@@ -100,12 +101,11 @@ namespace CQRS.Sample.GUI.Controllers
             {
                 if (ValidateCredentials(User.Identity.Name, model.Password))
                 {
-
-                    _bus.Publish(new ChangePassword(_accountQuery.Execute(User.Identity.Name).First().StreamId)
-                                 {
-                                     OldPassword = model.Password,
-                                     NewPassword = model.Password1,
-                                 });
+                    _bus.Publish(new ChangePassword(GetAccountStreamID())
+                    {
+                        OldPassword = model.Password,
+                        NewPassword = model.Password1,
+                    });
                     _bus.Commit();
                     return RedirectToAction("Index", "Home");
                 }
@@ -115,6 +115,21 @@ namespace CQRS.Sample.GUI.Controllers
                 }
             }
             return View(model);
+        }
+
+        /// <summary>
+        /// TODO: move to custom IPrincipal
+        /// </summary>
+        /// <returns></returns>
+        private Guid GetAccountStreamID()
+        {
+            return _accountQuery.Execute(User.Identity.Name).First().StreamId;
+        }
+
+        public ActionResult Logout()
+        {
+            FormsAuthentication.SignOut();
+            return RedirectToAction("Index", "Home");
         }
     }
 }

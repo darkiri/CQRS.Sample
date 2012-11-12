@@ -12,11 +12,13 @@ namespace CQRS.Sample.GUI.Models
 
         [DisplayName("Password")]
         [Required(ErrorMessage = "Required")]
+        [DataType(DataType.Password)]
         public string Password1 { get; set; }
 
         [DisplayName("Repeat password")]
         [Required(ErrorMessage = "Required")]
         [Compare("Password1", ErrorMessage = "Enter same password twice.")]
+        [DataType(DataType.Password)]
         public string Password2 { get; set; }
     }
 
@@ -27,21 +29,25 @@ namespace CQRS.Sample.GUI.Models
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Required")]
+        [DataType(DataType.Password)]
         public string Password { get; set; }
     }
 
     public class ChangePasswordViewModel
     {
         [Required(ErrorMessage = "Required")]
+        [DataType(DataType.Password)]
         public string Password { get; set; }
 
         [DisplayName("New password")]
         [Required(ErrorMessage = "Required")]
+        [DataType(DataType.Password)]
         public string Password1 { get; set; }
 
         [DisplayName("Repeat password")]
         [Required(ErrorMessage = "Required")]
         [Compare("Password1", ErrorMessage = "Enter same password twice.")]
+        [DataType(DataType.Password)]
         public string Password2 { get; set; }
     }
 }

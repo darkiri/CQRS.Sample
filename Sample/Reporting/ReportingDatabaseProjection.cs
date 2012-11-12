@@ -8,7 +8,7 @@ namespace CQRS.Sample.Reporting
 {
     public class ReportingDatabaseProjection
     {
-        readonly IDocumentStore _documentStore;
+        private readonly IDocumentStore _documentStore;
 
         public ReportingDatabaseProjection(DocumentStoreConfiguration storeConfig)
         {

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NLog;
 
 namespace CQRS.Sample.Store
 {
     public class EventStream : IEventStream
     {
+        private Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly IPersister _persister;
         private readonly ICommitDispatcher _dispatcher;
         private readonly List<StoreEvent> _pendingEvents = new List<StoreEvent>();
@@ -58,8 +60,9 @@ namespace CQRS.Sample.Store
                     _pendingEvents.Clear();
                     _dispatcher.Dispatch();
                 }
-                catch (OptimisticConcurrencyException)
+                catch (OptimisticConcurrencyException e)
                 {
+                    _logger.WarnException("Stream has been changed since last load.", e);
                     var newEvents = _persister.GetEvents(StreamId, Revision, Int32.MaxValue);
                     PopulateStream(newEvents);
                 }

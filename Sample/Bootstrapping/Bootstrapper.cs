@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using CQRS.Sample.Bus;
 using Raven.Client;
@@ -21,7 +22,7 @@ namespace CQRS.Sample.Bootstrapping
         }
     }
 
-    public abstract class DocumentStoreConfiguration
+    public abstract class DocumentStoreConfiguration : IDisposable
     {
         protected const string EVENT_STORE_DATABASE = "EventStore";
         protected const string REPORTING_DATABASE = "Reporting";
@@ -33,6 +34,12 @@ namespace CQRS.Sample.Bootstrapping
         public SubscriptionConfiguration WithAggregatesIn(Assembly assembly)
         {
             return new SubscriptionConfiguration(this, assembly);
+        }
+
+        public void Dispose()
+        {
+            EventStore.Dispose();
+            ReportingDatabase.Dispose();
         }
     }
 
@@ -54,7 +61,7 @@ namespace CQRS.Sample.Bootstrapping
         }
     }
 
-    public class SubscriptionConfiguration
+    public class SubscriptionConfiguration : IDisposable
     {
         readonly DocumentStoreConfiguration _storeConfiguration;
         readonly Assembly _aggregatesAssembly;
@@ -72,7 +79,7 @@ namespace CQRS.Sample.Bootstrapping
             return this;
         }
 
-        public void Start()
+        public IDisposable Start()
         {
             ObjectFactory.Initialize(x =>
             {
@@ -90,6 +97,13 @@ namespace CQRS.Sample.Bootstrapping
             });
             ObjectFactory.AssertConfigurationIsValid();
             ObjectFactory.GetInstance<IServiceBus>().Start();
+
+            return this;
+        }
+
+        public void Dispose()
+        {
+            _storeConfiguration.Dispose();
         }
     }
 }

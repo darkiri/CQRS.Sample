@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using CQRS.Sample.Bootstrapping;
-using CQRS.Sample.Events;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using NUnit.Framework;
@@ -15,16 +14,17 @@ namespace CQRS.Sample.Tests.Store
     public class raven_persistence_context : event_based_context
     {
         protected static IDocumentStore Store;
+        protected static DocumentStoreConfiguration StoreConfig;
         protected static RavenPersister Persister;
 
         private Establish context = () =>
         {
-            var storeConfig = Bootstrapper.InMemory();
-            Store = storeConfig.EventStore;
-            Persister = new RavenPersister(storeConfig);
+            StoreConfig = Bootstrapper.InMemory();
+            Store = StoreConfig.EventStore;
+            Persister = new RavenPersister(StoreConfig);
         };
 
-        private Cleanup all = () => Store.Dispose();
+        private Cleanup all = () => StoreConfig.Dispose();
 
         protected static void PersistSomeEvents(IEnumerable<StoreEvent> events)
         {

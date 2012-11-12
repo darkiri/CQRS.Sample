@@ -4,7 +4,6 @@
     ViewBag.Title = "Login";
 }
 
-<h2>Login</h2>
 @using (Html.BeginForm())
 {
     @Html.ValidationSummary(true)
@@ -14,18 +13,15 @@
         <ul>
             <li>
                 @Html.LabelFor(m => m.Email)
-                @Html.TextBoxFor(m => m.Email)
+                @Html.EditorFor(m => m.Email)
                 @Html.ValidationMessageFor(m => m.Email)
             </li>
             <li>
                 @Html.LabelFor(m => m.Password)
-                @Html.PasswordFor(m => m.Password)
+                @Html.EditorFor(m => m.Password)
                 @Html.ValidationMessageFor(m => m.Password)
             </li>
         </ul>
         <input type="submit" value="Log in"/>
     </fieldset>
-    <p>
-        @Html.ActionLink("Create", "Create")
-    </p>
 }

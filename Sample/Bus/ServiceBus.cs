@@ -28,6 +28,13 @@ namespace CQRS.Sample.Bus
             _repository.GetHandlers().ToList().ForEach(AddHandler);
         }
 
+        public void Subscribe<T>()
+        {
+            HandlerRepository.MessageHandlersIn(typeof (T))
+                             .ToList()
+                             .ForEach(AddHandler);
+        }
+
         public void Subscribe<TMsg>(string queue, Action<TMsg> handler) where TMsg : IMessage
         {
             AddSubscriber2Queue(queue, typeof (TMsg), msg => handler((TMsg) msg));

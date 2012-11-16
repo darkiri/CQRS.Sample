@@ -10,5 +10,6 @@ namespace CQRS.Sample.Bus
         void Send(string destination, IMessage message);
         void Start();
         void Subscribe<T>(Action<T> handler) where T : IMessage;
+        void Subscribe<T>();
     }
 }

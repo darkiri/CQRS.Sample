@@ -12,8 +12,11 @@
         @Html.Partial("_LoginPartial")
     </div>
     @RenderBody()
+    <div id="status" />
 
     @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/Scripts/jquery.signalR-0.5.3.min.js") 
+    @Scripts.Render("~/Scripts/cqrs-command-status.js")
     @RenderSection("scripts", required: false)
 </body>
 </html>

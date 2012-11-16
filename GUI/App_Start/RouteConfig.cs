@@ -1,5 +1,6 @@
 ﻿using System.Web.Mvc;
 using System.Web.Routing;
+using SignalR;
 
 namespace CQRS.Sample.GUI
 {
@@ -8,6 +9,8 @@ namespace CQRS.Sample.GUI
         public static void RegisterRoutes(RouteCollection routes)
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+
+            RouteTable.Routes.MapConnection<NotificationsEndpoint>("notifications", "notifications/{*operation}");
 
             routes.MapRoute(
                 name: "Default",

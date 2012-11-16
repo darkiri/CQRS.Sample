@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using CQRS.Sample.Aggregates;
+using CQRS.Sample.Bus;
 using CQRS.Sample.Commands;
+using CQRS.Sample.Events;
 using CQRS.Sample.Store;
 using NLog;
 
@@ -11,10 +13,12 @@ namespace CQRS.Sample
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly EventStore _store;
+        private readonly IServiceBus _bus;
 
-        public CommandHandlers(EventStore store)
+        public CommandHandlers(EventStore store, IServiceBus bus)
         {
             _store = store;
+            _bus = bus;
         }
 
         public void Handle(CreateAccount command)
@@ -41,6 +45,9 @@ namespace CQRS.Sample
             {
                 _logger.ErrorException("Cannot proceed command", e);
                 stream.Cancel();
+                
+                _bus.Publish(new ServerFailure(streamId, e.Message));
+                _bus.Commit();
             }
         }
 

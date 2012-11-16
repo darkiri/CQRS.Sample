@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Mvc;
 using System.Web.Security;
 using CQRS.Sample.Bus;
@@ -21,6 +23,25 @@ namespace CQRS.Sample.GUI.Controllers
             _bus = bus;
         }
 
+        private Guid QueryStreamId(string email)
+        {
+            return _accountQuery.Execute(email)
+                                .First()
+                                .StreamId;
+        }
+
+        private bool ValidateCredentials(string email, string password)
+        {
+            return _accountQuery
+                .Execute(email)
+                .Any(a => PasswordHash.ValidatePassword(password, a.PasswordHash));
+        }
+
+        private bool AccountAlreadyExists(string email)
+        {
+            return _accountQuery.Execute(email) .Any();
+        }
+
         public ActionResult Login(string returnUrl)
         {
             ViewBag.ReturnUrl = returnUrl;
@@ -32,7 +53,8 @@ namespace CQRS.Sample.GUI.Controllers
         {
             if (ModelState.IsValid && ValidateCredentials(model.Email, model.Password))
             {
-                FormsAuthentication.SetAuthCookie(model.Email, false);
+                Response.SetAuthCookie(model.Email, false, QueryStreamId(model.Email));
+
                 if (Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
@@ -49,12 +71,6 @@ namespace CQRS.Sample.GUI.Controllers
             }
         }
 
-        private bool ValidateCredentials(string email, string password)
-        {
-            return _accountQuery
-                .Execute(email)
-                .Any(a => PasswordHash.ValidatePassword(password, a.PasswordHash));
-        }
 
         public ActionResult Create()
         {
@@ -72,21 +88,16 @@ namespace CQRS.Sample.GUI.Controllers
                 }
                 else
                 {
-                    _bus.Publish(new CreateAccount
+                    var createAccount = new CreateAccount
                     {
                         Email = model.Email,
                         Password = model.Password1,
-                    });
-                    _bus.Commit();
+                    };
+                    _bus.PublishWithLatency(createAccount);
                     return RedirectToAction("Login");
                 }
             }
             return View(model);
-        }
-
-        private bool AccountAlreadyExists(string email)
-        {
-            return _accountQuery.Execute(email).Any();
         }
 
         public ActionResult ChangePassword()
@@ -101,12 +112,11 @@ namespace CQRS.Sample.GUI.Controllers
             {
                 if (ValidateCredentials(User.Identity.Name, model.Password))
                 {
-                    _bus.Publish(new ChangePassword(GetAccountStreamID())
+                    _bus.PublishWithLatency(new ChangePassword(HttpContext.GetStreamId())
                     {
                         OldPassword = model.Password,
                         NewPassword = model.Password1,
                     });
-                    _bus.Commit();
                     return RedirectToAction("Index", "Home");
                 }
                 else
@@ -117,19 +127,25 @@ namespace CQRS.Sample.GUI.Controllers
             return View(model);
         }
 
-        /// <summary>
-        /// TODO: move to custom IPrincipal
-        /// </summary>
-        /// <returns></returns>
-        private Guid GetAccountStreamID()
-        {
-            return _accountQuery.Execute(User.Identity.Name).First().StreamId;
-        }
 
         public ActionResult Logout()
         {
             FormsAuthentication.SignOut();
             return RedirectToAction("Index", "Home");
+        }
+    }
+
+
+    public static class BusExtensions
+    {
+        public static void PublishWithLatency(this IServiceBus bus, IMessage message)
+        {
+            Task.Factory.StartNew(() =>
+            {
+                Thread.Sleep(3000);
+                bus.Publish(message);
+                bus.Commit();
+            });
         }
     }
 }

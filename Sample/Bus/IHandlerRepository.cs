@@ -35,7 +35,7 @@ namespace CQRS.Sample.Bus
             return ObjectFactory.GetInstance(handlerDef.ReflectedType);
         }
 
-        static IEnumerable<MethodInfo> MessageHandlersIn(Type t)
+        public static IEnumerable<MethodInfo> MessageHandlersIn(Type t)
         {
             return t.GetMethods()
                 .Where(m => m.IsPublic && m.Name == "Handle")

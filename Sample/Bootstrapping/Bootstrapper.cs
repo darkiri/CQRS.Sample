@@ -56,8 +56,8 @@ namespace CQRS.Sample.Bootstrapping
     {
         public InMemoryStoreConfiguration()
         {
-            EventStore = new EmbeddableDocumentStore {RunInMemory = true, DefaultDatabase = EVENT_STORE_DATABASE}.Initialize();
-            ReportingDatabase = new EmbeddableDocumentStore {RunInMemory = true, DefaultDatabase = REPORTING_DATABASE}.Initialize();
+            EventStore = new EmbeddableDocumentStore {RunInMemory = true}.Initialize();
+            ReportingDatabase = new EmbeddableDocumentStore {RunInMemory = true}.Initialize();
         }
     }
 

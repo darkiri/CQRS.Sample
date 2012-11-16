@@ -12,7 +12,7 @@ namespace CQRS.Sample.Bootstrapping
         public void Process(Type type, Registry registry)
         {
             var m = _lastPascalWord.Match(type.Name);
-            if (!type.IsAbstract && !type.IsInterface && m.Success)
+            if (!type.IsAbstract && !type.IsInterface && type.IsPublic && m.Success)
             {
                 var interfaceType = type.GetInterfaces().FirstOrDefault(iface => iface.Name.EndsWith(m.Value));
                 if (null != interfaceType)

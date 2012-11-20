@@ -15,7 +15,7 @@ namespace CQRS.Sample.Tests.Bus
 
         Establish context = () =>
                                 {
-                                    Bus = new ServiceBus(new HandlerRepository(Assembly.GetExecutingAssembly()));
+                                    Bus = new ServiceBus(new AssemblyHandlerRepository(Assembly.GetExecutingAssembly()));
                                 };
 
 

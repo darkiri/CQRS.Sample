@@ -29,18 +29,18 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_persisting_events_for_exisitng_revision : raven_persistence_context
     {
-        protected static StoreEvent Commit1_Event1 = Event("second", 0);
-        protected static StoreEvent Commit2_Event1 = Event("another second", 0);
-        protected static StoreEvent Commit2_Event2 = Event("third", 1);
+        protected static StoreEvent Commit1Event1 = Event("second", 0);
+        protected static StoreEvent Commit2Event1 = Event("another second", 0);
+        protected static StoreEvent Commit2Event2 = Event("third", 1);
         protected static Exception Exception;
 
-        Establish context =()=> PersistSomeEvents(Commit1_Event1);
-        Because of =()=> Exception = Catch.Exception(() => PersistSomeEvents(Commit2_Event1, Commit2_Event2));
+        Establish context =()=> PersistSomeEvents(Commit1Event1);
+        Because of =()=> Exception = Catch.Exception(() => PersistSomeEvents(Commit2Event1, Commit2Event2));
 
         It should_throw_optimistic_concurrency_exception =()=> Exception.ShouldBeOfType<OptimisticConcurrencyException>();
-        It should_store_second_event =()=> AssertEventInStore(Commit1_Event1);
-        It should_not_store_first_event_from_the_second_commit =()=> AssertEventNotInStore(Commit2_Event1);
-        It should_not_store_second_event_from_the_second_commit =()=> AssertEventNotInStore(Commit2_Event2);
+        It should_store_second_event =()=> AssertEventInStore(Commit1Event1);
+        It should_not_store_first_event_from_the_second_commit =()=> AssertEventNotInStore(Commit2Event1);
+        It should_not_store_second_event_from_the_second_commit =()=> AssertEventNotInStore(Commit2Event2);
     }
 
     [Subject(typeof (RavenPersister))]
@@ -52,22 +52,25 @@ namespace CQRS.Sample.Tests.Store
         
         Establish context =()=> PersistSomeEvents(FirstEvent, SecondEvent);
         Because of =()=> LoadedEvents = Persister.GetCommits(StreamId, 0, 1)
-                                                   .SelectMany(c => c.Events);
+                                                 .SelectMany(c => c.Events);
 
         It should_request_events_from_the_database =()=> AssertEquivalent(() => LoadedEvents, FirstEvent, SecondEvent);
     }
 
     [Subject(typeof (RavenPersister))]
-    public class when_marking_commit_as_dispatched : raven_persistence_context {
+    public class when_marking_commit_as_dispatched : raven_persistence_context
+    {
         protected static Commit Commit;
 
-        Establish context = () => {
-            PersistSomeEvents(Event("root", 0));
-            Commit = Persister.GetUndispatchedCommits().First();
-        };
-        Because of =()=> Persister.MarkAsDispatched(Commit);
+        private Establish context =()=>
+                                    {
+                                        PersistSomeEvents(Event("root", 0));
+                                        Commit = Persister.GetUndispatchedCommits().First();
+                                    };
 
-        It should_reset_undispatched_flag =()=> Assert.True(LoadCommit(0).IsDispatched);
+        private Because of =()=> Persister.MarkAsDispatched(Commit);
+
+        private It should_reset_undispatched_flag =()=> Assert.True(LoadCommit(0).IsDispatched);
     }
 
     [Subject(typeof (RavenPersister))]
@@ -78,14 +81,14 @@ namespace CQRS.Sample.Tests.Store
         protected static IEnumerable<Commit> UndispatchedCommits;
 
         Establish context =()=> {
-            PersistSomeEvents(FirstEvent, SecondEvent);
+            PersistSomeEvents(FirstEvent);
+            PersistSomeEvents(SecondEvent);
             Persister.MarkAsDispatched(LoadCommit(0));
         };
         Because of =()=> UndispatchedCommits = Persister.GetUndispatchedCommits();
 
-        It should_return_commits_with_undispatched_flag =()=> Assert.That(UndispatchedCommits.Count(),Is.EqualTo(0));
+        It should_return_commits_with_undispatched_flag =()=> Assert.That(UndispatchedCommits.Count(), Is.EqualTo(1));
     }
-
 
     [Subject("Raven Experiments")]
     public class when_storing_two_objects_with_same_id_in_separate_sessions : raven_persistence_context

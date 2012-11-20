@@ -18,8 +18,6 @@ namespace CQRS.Sample.Aggregates
             PasswordHash = evt.PasswordHash;
         }
 
-        void Apply(AccountChangeFailed evt)
-        {
-        }
+        void Apply(AccountChangeFailed evt) { }
     }
 }

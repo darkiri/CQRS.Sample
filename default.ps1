@@ -1,6 +1,6 @@
 properties {
    $sln = "CQRS.Sample.sln"
-   $config = "Release"
+   $config = "Debug"
    $mspec = "packages\Machine.Specifications.0.5.10\tools\mspec-x86-clr4.exe"
 }
 

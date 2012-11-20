@@ -30,9 +30,10 @@ namespace CQRS.Sample.Bus
 
         public void Subscribe<T>()
         {
-            HandlerRepository.MessageHandlersIn(typeof (T))
-                             .ToList()
-                             .ForEach(AddHandler);
+            AssemblyHandlerRepository
+                .MessageHandlersIn(typeof (T))
+                .ToList()
+                .ForEach(AddHandler);
         }
 
         public void Subscribe<TMsg>(string queue, Action<TMsg> handler) where TMsg : IMessage

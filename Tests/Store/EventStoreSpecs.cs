@@ -154,7 +154,6 @@ namespace CQRS.Sample.Tests.Store
 
         It should_send_event_to_bus =()=> BusMock.Verify(b => b.Publish(SomeEvent));
         It should_request_undispatched_events = () => PersisterMock.Verify(p => p.GetUndispatchedCommits(), Times.Once());
-
         It should_mark_events_as_dispatched =()=> PersisterMock.Verify(p => p.MarkAsDispatched(Commit), Times.Once());
     }
 }

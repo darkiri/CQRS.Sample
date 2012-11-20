@@ -72,15 +72,15 @@
     <Compile Include="Aggregates\MutableState.cs" />
     <Compile Include="Bootstrapping\Bootstrapper.cs" />
     <Compile Include="Bootstrapping\SimpleConvention.cs" />
+    <Compile Include="Bus\AssemblyHandlerRepository.cs" />
     <Compile Include="Bus\IHandlerRepository.cs" />
     <Compile Include="Bus\IMessage.cs" />
     <Compile Include="Bus\IServiceBus.cs" />
-    <Compile Include="Commands\CreateAccount.cs" />
+    <Compile Include="Commands\AccountCommands.cs" />
     <Compile Include="Commands\DomainCommand.cs" />
     <Compile Include="Events\AccountEvents.cs" />
     <Compile Include="Events\ServerFailure.cs" />
     <Compile Include="IUnitOfWork.cs" />
-    <Compile Include="Container.cs" />
     <Compile Include="Bus\ServiceBus.cs" />
     <Compile Include="PasswordHash.cs" />
     <Compile Include="CommandHandlers.cs" />
@@ -92,7 +92,6 @@
     <Compile Include="Store\EventStore.cs" />
     <Compile Include="Store\EventStream.cs" />
     <Compile Include="Store\ICommitDispatcher.cs" />
-    <Compile Include="Store\IEvent.cs" />
     <Compile Include="Store\StoreEvent.cs" />
     <Compile Include="Store\IEventStream.cs" />
     <Compile Include="Store\IPersister.cs" />

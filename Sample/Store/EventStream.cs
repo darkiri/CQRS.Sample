@@ -22,13 +22,7 @@ namespace CQRS.Sample.Store
             PopulateStream(_persister.GetCommits(StreamId, 0, revision).SelectMany(c => c.Events).ToList());
         }
 
-        public TEvent NewEvent<TEvent>() where TEvent : StoreEvent
-        {
-            return (TEvent)Activator.CreateInstance(typeof(TEvent), new object[] {StreamId});
-        }
-
         public Guid StreamId { get; private set; }
-
         public int Revision { get; private set; }
 
         public IEnumerable<StoreEvent> UncommittedEvents
@@ -43,8 +37,7 @@ namespace CQRS.Sample.Store
 
         public void Append(StoreEvent evt)
         {
-            var revision = _pendingEvents.Any() ? _pendingEvents.Last().StreamRevision : Revision;
-            evt.StreamRevision = revision + 1;
+            evt.StreamRevision = Revision + _pendingEvents.Count + 1;
             _pendingEvents.Add(evt);
         }
 
@@ -55,7 +48,6 @@ namespace CQRS.Sample.Store
                 try
                 {
                     _persister.PersistCommit(StreamId, _pendingEvents);
-
                     PopulateStream(_pendingEvents);
                     _pendingEvents.Clear();
                     _dispatcher.Dispatch();
@@ -63,8 +55,9 @@ namespace CQRS.Sample.Store
                 catch (OptimisticConcurrencyException e)
                 {
                     _logger.WarnException("Stream has been changed since last load.", e);
-                    var newEvents = _persister.GetCommits(StreamId, Revision, Int32.MaxValue)
-                                              .SelectMany(c => c.Events);
+                    var newEvents = _persister
+                        .GetCommits(StreamId, Revision, Int32.MaxValue)
+                        .SelectMany(c => c.Events);
                     PopulateStream(newEvents);
                 }
             }

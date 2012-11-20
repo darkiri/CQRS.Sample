@@ -6,8 +6,8 @@ using CQRS.Sample.Events;
 namespace CQRS.Sample.Store
 {
     /// <summary>
-    /// Oversimplified version of the  Jonathan Oliver's EventStore
-    /// No snapshotting, no transactions 
+    /// Dead-simple event store
+    /// Entry-point to create event streams
     /// </summary>
     public class EventStore
     {

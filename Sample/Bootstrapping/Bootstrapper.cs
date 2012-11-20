@@ -83,7 +83,7 @@ namespace CQRS.Sample.Bootstrapping
         {
             ObjectFactory.Initialize(x =>
             {
-                x.For<IHandlerRepository>().Use(new HandlerRepository(_aggregatesAssembly));
+                x.For<IHandlerRepository>().Use(new AssemblyHandlerRepository(_aggregatesAssembly));
                 x.For<DocumentStoreConfiguration>().Use(_storeConfiguration);
                 x.Scan(a =>
                 {

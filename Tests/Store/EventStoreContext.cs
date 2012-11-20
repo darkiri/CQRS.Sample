@@ -13,7 +13,7 @@ namespace CQRS.Sample.Tests.Store
         protected static Mock<ICommitDispatcher> DispatcherMock;
         protected static Mock<IPersister> PersisterMock;
         protected static EventStore Store;
-        public static IEventStream Stream;
+        protected static IEventStream Stream;
 
         Establish context = () =>
                             {
@@ -22,10 +22,12 @@ namespace CQRS.Sample.Tests.Store
                                 Store = new EventStore(PersisterMock.Object, DispatcherMock.Object);
                             };
 
-        protected static StoreEvent Event(string payload) {
-            return new StringEvent {
-                Payload = payload,
-            };
+        protected static StoreEvent Event(string payload)
+        {
+            return new StringEvent
+                   {
+                       Payload = payload,
+                   };
         }
 
         public static IEventStream WithStream(int revision)
@@ -60,8 +62,9 @@ namespace CQRS.Sample.Tests.Store
             return Moq.It.IsAny<T>();
         }
 
-        protected static Commit[] AsCommit(params StoreEvent[] events) {
-            return new[]{ new Commit(events)};
+        protected static Commit[] AsCommit(params StoreEvent[] events)
+        {
+            return new[] {new Commit(events)};
         }
     }
 }

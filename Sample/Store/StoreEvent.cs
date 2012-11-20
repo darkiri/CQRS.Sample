@@ -18,7 +18,15 @@ namespace CQRS.Sample.Store
 
         public override bool Equals(object obj)
         {
-            return obj is StoreEvent && ((StoreEvent)obj).Id == Id;
+            return null != obj && GetType() == obj.GetType() && ((StoreEvent)obj).Id == Id;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (StreamId.GetHashCode()*397) ^ StreamRevision;
+            }
         }
 
         public override string ToString()

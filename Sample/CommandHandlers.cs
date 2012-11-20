@@ -46,12 +46,12 @@ namespace CQRS.Sample
                 _logger.ErrorException("Cannot proceed command", e);
                 stream.Cancel();
                 
-                _bus.Publish(new ServerFailure(streamId, e.Message));
+                _bus.Publish(new ServerFailure{StreamId = streamId, Message = e.Message});
                 _bus.Commit();
             }
         }
 
-        private static TAggregate CreateAggregate<TAggregate, TState>(IEnumerable<IEvent> events, Action<IEvent> publishAction)
+        private static TAggregate CreateAggregate<TAggregate, TState>(IEnumerable<StoreEvent> events, Action<StoreEvent> publishAction)
             where TState : MutableState
             where TAggregate : AggregateBase<TState>
         {

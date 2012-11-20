@@ -5,7 +5,7 @@ using CQRS.Sample.Store;
 namespace CQRS.Sample.Aggregates
 {
     public abstract class MutableState {
-        public void LoadFromHistory(IEnumerable<IEvent> events)
+        public void LoadFromHistory(IEnumerable<StoreEvent> events)
         {
             foreach (var evt in events)
             {
@@ -13,10 +13,10 @@ namespace CQRS.Sample.Aggregates
             }
         }
 
-        public void ApplyEvent(IEvent evt)
-        {
+        public void ApplyEvent(StoreEvent evt) {
             GetType()
-                .GetMethod("Apply", BindingFlags.NonPublic | BindingFlags.Instance,
+                .GetMethod("Apply",
+                           BindingFlags.NonPublic | BindingFlags.Instance,
                            null, new[] {evt.GetType()}, null)
                 .Invoke(this, new object[] {evt});
         }

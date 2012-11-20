@@ -1,7 +1,7 @@
 properties {
    $sln = "CQRS.Sample.sln"
    $config = "Release"
-   $mspec = "packages\Machine.Specifications.0.5.7-beta4\tools\mspec-x86-clr4.exe"
+   $mspec = "packages\Machine.Specifications.0.5.10\tools\mspec-x86-clr4.exe"
 }
 
 task default -depends Test

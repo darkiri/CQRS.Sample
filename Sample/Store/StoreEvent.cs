@@ -3,17 +3,27 @@ using CQRS.Sample.Bus;
 
 namespace CQRS.Sample.Store
 {
-    public class StoreEvent : IMessage, IEquatable<StoreEvent>
+    /// <summary>
+    /// Messages that can be stored as an event stream
+    /// </summary>
+    public class StoreEvent : IMessage
     {
-        public Guid Id { get; set; }
+        public Guid StreamId { get; set; }
         public int StreamRevision { get; set; }
-        public bool IsDispatched { get; set; }
-        
-        public IEvent Body { get; set; }
 
-        public bool Equals(StoreEvent other)
+        public String Id
         {
-            return null != other && Id == other.Id;
+            get { return String.Format("events/{0}/{1}", StreamId, StreamRevision); }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is StoreEvent && ((StoreEvent)obj).Id == Id;
+        }
+
+        public override string ToString()
+        {
+            return Id;
         }
     }
 }

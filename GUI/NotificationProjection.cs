@@ -1,5 +1,6 @@
 ﻿using System;
 using CQRS.Sample.Events;
+using CQRS.Sample.Store;
 using SignalR;
 
 namespace CQRS.Sample.GUI

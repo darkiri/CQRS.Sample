@@ -10,3 +10,4 @@ _ReSharper.*/
 *.dotCover
 packages/*/
 *.log
+*.swp

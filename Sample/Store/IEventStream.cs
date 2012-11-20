@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using CQRS.Sample.Events;
 
 namespace CQRS.Sample.Store
 {
@@ -9,7 +8,7 @@ namespace CQRS.Sample.Store
         Guid StreamId { get; }
         int Revision { get; }
         IEnumerable<StoreEvent> UncommittedEvents { get; }
-        IEnumerable<IEvent> CommittedEvents { get; }
-        void Append(IEvent evt);
+        IEnumerable<StoreEvent> CommittedEvents { get; }
+        void Append(StoreEvent evt);
     }
 }

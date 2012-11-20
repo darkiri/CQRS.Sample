@@ -1,31 +1,17 @@
-﻿using System;
+﻿using CQRS.Sample.Store;
 
 namespace CQRS.Sample.Events
 {
-    public class AccountCreated : DomainEvent
+    public class AccountCreated : StoreEvent
     {
-        public AccountCreated(Guid streamId, string email, string passwordHash) : base(streamId)
-        {
-            Email = email;
-            PasswordHash = passwordHash;
-        }
-
-        public string Email { get; private set; }
-        public string PasswordHash { get; private set; }
-    }
-        
-    public class PasswordChanged : DomainEvent
-    {
-        public PasswordChanged(Guid streamId, string passwordHash) : base(streamId)
-        {
-            PasswordHash = passwordHash;
-        }
-
-        public string PasswordHash { get; private set; }
+        public string Email { get; set; }
+        public string PasswordHash { get; set; }
     }
 
-    public class AccountChangeFailed : DomainEvent
+    public class PasswordChanged : StoreEvent
     {
-        public AccountChangeFailed(Guid streamId) : base(streamId) {}
+        public string PasswordHash { get; set; }
     }
+
+    public class AccountChangeFailed : StoreEvent { }
 }

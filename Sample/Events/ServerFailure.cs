@@ -1,14 +1,9 @@
-using System;
+using CQRS.Sample.Store;
 
 namespace CQRS.Sample.Events
 {
-    public class ServerFailure : DomainEvent
+    public class ServerFailure : StoreEvent
     {
-        public ServerFailure(Guid streamId, string message) : base(streamId)
-        {
-            Message = message;
-        }
-
-        public string Message { get; private set; }
+        public string Message { get; set; }
     }
 }

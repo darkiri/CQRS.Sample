@@ -18,11 +18,5 @@ namespace CQRS.Sample.GUI
             Groups.Add(connectionId, HttpContext.Current.GetStreamId().ToString());
             return base.OnReconnectedAsync(request, groups, connectionId);
         }
-
-        protected override Task OnDisconnectAsync(string connectionId)
-        {
-            //Groups.Remove(connectionId, HttpContext.Current.GetStreamId().ToString());
-            return base.OnDisconnectAsync(connectionId);
-        }
     }
 }

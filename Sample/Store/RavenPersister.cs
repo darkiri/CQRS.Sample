@@ -8,165 +8,83 @@ using Raven.Client;
 using Raven.Client.Indexes;
 using Raven.Client.Linq;
 
-namespace CQRS.Sample.Store
-{
-    public class RavenPersister : IPersister
-    {
+namespace CQRS.Sample.Store {
+    public class RavenPersister : IPersister {
         private readonly IDocumentStore _store;
 
-        public RavenPersister(DocumentStoreConfiguration storeConfig)
-        {
+        public RavenPersister(DocumentStoreConfiguration storeConfig) {
             _store = storeConfig.EventStore;
             Register.Indexes(_store);
         }
 
-        public void PersistEvents(Guid streamId, IEnumerable<StoreEvent> events)
-        {
-            try
-            {
-                using (var session = _store.OpenSession())
-                {
-                    var commit = new Commit
-                                 {
-                                     Stream = streamId,
-                                     Events = events.ToArray(),
-                                 };
+        public void PersistCommit(Guid streamId, IEnumerable<StoreEvent> events) {
+            try {
+                using (var session = _store.OpenSession()) {
                     session.Advanced.UseOptimisticConcurrency = true;
+
+                    var commit = new Commit (events);
+                    foreach (var evt in commit.Events) {
+                        evt.StreamId = streamId;
+                    }
                     session.Store(commit);
                     session.SaveChanges();
                 }
-            }
-            catch (ConcurrencyException)
-            {
+            } catch (ConcurrencyException) {
                 throw new OptimisticConcurrencyException();
             }
         }
 
-        public IEnumerable<StoreEvent> GetEvents(Guid streamId, int minRevision, int maxRevision)
-        {
-            var commits = LoadCommits(streamId, minRevision, maxRevision);
-            var events = FilterEvents(commits, minRevision, maxRevision);
-            return events;
+        public IEnumerable<Commit> GetCommits(Guid streamId, int minRevision, int maxRevision) {
+            using (var session = _store.OpenSession()) {
+                return session.Query<Commit, CommitsByRevision>()
+                                     .Customize(a => a.WaitForNonStaleResultsAsOfLastWrite())
+                                     .Where(c => c.Events.Any(e => e.StreamId == streamId && e.StreamRevision >= minRevision && e.StreamRevision <= maxRevision))
+                                     .ToArray();
+            }
         }
 
-        private IEnumerable<Commit> LoadCommits(Guid streamId, int minRevision, int maxRevision)
-        {
-            using (var session = _store.OpenSession())
-            {
+        public IEnumerable<Commit> GetUndispatchedCommits() {
+            using (var session = _store.OpenSession()) {
                 return session
-                    .Query<Commit, CommitsByEventRevision>()
+                    .Query<Commit, CommitsByIsDispatched>()
                     .Customize(a => a.WaitForNonStaleResultsAsOfLastWrite())
-                    .Where(c => c.Stream == streamId &&
-                                c.Events.Any(e => e.StreamRevision >= minRevision &&
-                                                  e.StreamRevision <= maxRevision))
+                    .Where(c => !c.IsDispatched)
                     .ToArray();
             }
         }
 
-        private static IEnumerable<StoreEvent> FilterEvents(IEnumerable<Commit> commits, int minRevision, int maxRevision)
-        {
-            return commits
-                .SelectMany(c => c.Events)
-                .Where(e => e.StreamRevision >= minRevision &&
-                            e.StreamRevision <= maxRevision)
-                .OrderBy(e => e.StreamRevision);
-        }
-
-        public IEnumerable<StoreEvent> GetUndispatchedEvents()
-        {
-            using (var session = _store.OpenSession())
-            {
-                return session
-                    .Query<Commit, CommitByEventDispatched>()
-                    .Customize(a => a.WaitForNonStaleResultsAsOfLastWrite())
-                    .Where(c => c.Events.Any(e => !e.IsDispatched))
-                    .ToArray()
-                    .SelectMany(c => c.Events)
-                    .Where(e => !e.IsDispatched)
-                    .OrderBy(e => e.StreamRevision);
-            }
-        }
-
-        public void MarkAsDispatched(StoreEvent evt)
-        {
-            using (var session = _store.OpenSession())
-            {
-                var storedEvent = session
-                    .Query<Commit, CommitByEventId>()
-                    .First(c => c.Events.Any(e => e.Id == evt.Id))
-                    .Events
-                    .Single(e => e.Id == evt.Id);
+        public void MarkAsDispatched(Commit c) {
+            using (var session = _store.OpenSession()) {
+                var storedEvent = session.Load<Commit>(c.Id);
                 storedEvent.IsDispatched = true;
                 session.SaveChanges();
             }
         }
+    }
 
-        public class Commit
-        {
-            public Guid Stream { get; set; }
-            public StoreEvent[] Events { get; set; }
-
-            public string Id
-            {
-                get { return String.Format("commits/{0}/{1}", Stream, Events.Select(e => e.StreamRevision).Min()); }
-            }
-
-            public int Revision
-            {
-                get { return Events.Select(e => e.StreamRevision).Max(); }
-            }
+    public static class Register {
+        public static void Indexes(IDocumentStore store) {
+            new CommitsByRevision().Execute(store);
+            new CommitsByIsDispatched().Execute(store);
         }
     }
 
-    public static class Register
-    {
-        public static void Indexes(IDocumentStore store)
-        {
-            new CommitsByEventRevision().Execute(store);
-            new CommitByEventDispatched().Execute(store);
-            new CommitByEventId().Execute(store);
+    public class CommitsByRevision : AbstractIndexCreationTask<Commit> {
+        public CommitsByRevision() {
+            Map = commits => from c in commits
+                             from e in c.Events
+                            select new {
+                                Events_StreamId = e.StreamId,
+                                Events_StreamRevision = e.StreamRevision,
+                            };
+            Sort(commit => commit.Id, SortOptions.Int);
         }
     }
 
-    public class CommitsByEventRevision : AbstractIndexCreationTask<RavenPersister.Commit, RavenPersister.Commit>
-    {
-        public CommitsByEventRevision()
-        {
-            Map = commits => from commit in commits
-                             from evt in commit.Events
-                             select new
-                                    {
-                                        commit.Stream,
-                                        commit.Revision,
-                                        Events_StreamRevision = evt.StreamRevision,
-                                    };
-            Sort(commit => commit.Revision, SortOptions.Int);
-        }
-    }
-
-    public class CommitByEventDispatched : AbstractIndexCreationTask<RavenPersister.Commit, RavenPersister.Commit>
-    {
-        public CommitByEventDispatched()
-        {
-            Map = commits => from commit in commits
-                             from evt in commit.Events
-                             select new
-                                    {
-                                        Events_IsDispatched = evt.IsDispatched
-                                    };
-        }
-    }
-
-    public class CommitByEventId : AbstractIndexCreationTask<RavenPersister.Commit, RavenPersister.Commit>
-    {
-        public CommitByEventId()
-        {
-            Map = commits => from commit in commits
-                             from evt in commit.Events
-                             select new
-                                    {
-                                        Events_Id = evt.Id
-                                    };
+    public class CommitsByIsDispatched : AbstractIndexCreationTask<Commit> {
+        public CommitsByIsDispatched() {
+            Map = commits => from c in commits
+                             select new {c.IsDispatched};
         }
     }
 }

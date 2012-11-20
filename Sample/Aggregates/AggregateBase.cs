@@ -4,9 +4,9 @@ using CQRS.Sample.Store;
 namespace CQRS.Sample.Aggregates
 {
     public class AggregateBase<TState> where TState : MutableState {
-        private readonly Action<IEvent> _publishAction;
+        private readonly Action<StoreEvent> _publishAction;
 
-        public AggregateBase(TState state, Action<IEvent> publishAction)
+        public AggregateBase(TState state, Action<StoreEvent> publishAction)
         {
             State = state;
             _publishAction = publishAction;
@@ -14,7 +14,7 @@ namespace CQRS.Sample.Aggregates
 
         public TState State { get; private set; }
 
-        protected void ApplyAndPublish(IEvent evt)
+        protected void ApplyAndPublish(StoreEvent evt)
         {
             State.ApplyEvent(evt);
             _publishAction(evt);

@@ -5,10 +5,10 @@ namespace CQRS.Sample.Store
 {
     public interface IPersister
     {
-        void PersistEvents(Guid streamId, IEnumerable<StoreEvent> events);
-        IEnumerable<StoreEvent> GetEvents(Guid streamId, int minRevision, int maxRevision);
-        IEnumerable<StoreEvent> GetUndispatchedEvents();
-        void MarkAsDispatched(StoreEvent evt);
+        void PersistCommit(Guid streamId, IEnumerable<StoreEvent> events);
+        IEnumerable<Commit> GetCommits(Guid streamId, int minRevision, int maxRevision);
+        IEnumerable<Commit> GetUndispatchedCommits();
+        void MarkAsDispatched(Commit c);
     }
 
     public class OptimisticConcurrencyException : Exception { }

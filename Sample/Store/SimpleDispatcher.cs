@@ -15,11 +15,13 @@ namespace CQRS.Sample.Store
 
         public void Dispatch()
         {
-            foreach (var evt in _persister.GetUndispatchedEvents())
+            foreach (var commit in _persister.GetUndispatchedCommits())
             {
-                _bus.Publish(evt.Body);
+                foreach (var evt in commit.Events) {
+                    _bus.Publish(evt);
+                }
                 _bus.Commit();
-                _persister.MarkAsDispatched(evt);
+                _persister.MarkAsDispatched(commit);
             }
         }
     }

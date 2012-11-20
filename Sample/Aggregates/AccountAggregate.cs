@@ -7,7 +7,7 @@ namespace CQRS.Sample.Aggregates
 {
     public class AccountAggregate : AggregateBase<AccountAggregateMemento>
     {
-        public AccountAggregate(AccountAggregateMemento state, Action<IEvent> publishAction)
+        public AccountAggregate(AccountAggregateMemento state, Action<StoreEvent> publishAction)
             : base(state, publishAction) {}
 
         public void CreateNew(CreateAccount command)
@@ -18,14 +18,15 @@ namespace CQRS.Sample.Aggregates
 
             if (AccountExists())
             {
-                ApplyAndPublish(new AccountChangeFailed(command.StreamId));
+                ApplyAndPublish(new AccountChangeFailed());
             }
             else
             {
-                ApplyAndPublish(new AccountCreated(
-                                    command.StreamId,
-                                    command.Email,
-                                    PasswordHash.CreateHash(command.Password)));
+                ApplyAndPublish(new AccountCreated
+                                {
+                                    Email = command.Email,
+                                    PasswordHash = PasswordHash.CreateHash(command.Password)
+                                });
             }
         }
 
@@ -38,11 +39,11 @@ namespace CQRS.Sample.Aggregates
         {
             if (!PasswordHash.ValidatePassword(command.OldPassword, State.PasswordHash))
             {
-                ApplyAndPublish(new AccountChangeFailed(command.StreamId));
+                ApplyAndPublish(new AccountChangeFailed());
             }
             else
             {
-                ApplyAndPublish(new PasswordChanged(command.StreamId, PasswordHash.CreateHash(command.NewPassword)));
+                ApplyAndPublish(new PasswordChanged{PasswordHash = PasswordHash.CreateHash(command.NewPassword)});
             }
         }
     }

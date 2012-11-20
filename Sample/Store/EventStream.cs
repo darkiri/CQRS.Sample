@@ -7,7 +7,7 @@ namespace CQRS.Sample.Store
 {
     public class EventStream : IEventStream
     {
-        private Logger _logger = LogManager.GetCurrentClassLogger();
+        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly IPersister _persister;
         private readonly ICommitDispatcher _dispatcher;
         private readonly List<StoreEvent> _pendingEvents = new List<StoreEvent>();
@@ -19,7 +19,12 @@ namespace CQRS.Sample.Store
             _dispatcher = dispatcher;
             StreamId = streamId;
             
-            PopulateStream(_persister.GetEvents(StreamId, 0, revision).ToList());
+            PopulateStream(_persister.GetCommits(StreamId, 0, revision).SelectMany(c => c.Events).ToList());
+        }
+
+        public TEvent NewEvent<TEvent>() where TEvent : StoreEvent
+        {
+            return (TEvent)Activator.CreateInstance(typeof(TEvent), new object[] {StreamId});
         }
 
         public Guid StreamId { get; private set; }
@@ -31,21 +36,16 @@ namespace CQRS.Sample.Store
             get { return _pendingEvents; }
         }
 
-        public IEnumerable<IEvent> CommittedEvents
+        public IEnumerable<StoreEvent> CommittedEvents
         {
-            get { return _committedEvents.Select(e => e.Body); }
+            get { return _committedEvents; }
         }
 
-        public void Append(IEvent evt)
+        public void Append(StoreEvent evt)
         {
             var revision = _pendingEvents.Any() ? _pendingEvents.Last().StreamRevision : Revision;
-            _pendingEvents.Add(new StoreEvent
-            {
-                Id = Guid.NewGuid(),
-                IsDispatched = false,
-                StreamRevision = revision + 1,
-                Body = evt,
-            });
+            evt.StreamRevision = revision + 1;
+            _pendingEvents.Add(evt);
         }
 
         public void Commit()
@@ -54,7 +54,7 @@ namespace CQRS.Sample.Store
             {
                 try
                 {
-                    _persister.PersistEvents(StreamId, _pendingEvents);
+                    _persister.PersistCommit(StreamId, _pendingEvents);
 
                     PopulateStream(_pendingEvents);
                     _pendingEvents.Clear();
@@ -63,7 +63,8 @@ namespace CQRS.Sample.Store
                 catch (OptimisticConcurrencyException e)
                 {
                     _logger.WarnException("Stream has been changed since last load.", e);
-                    var newEvents = _persister.GetEvents(StreamId, Revision, Int32.MaxValue);
+                    var newEvents = _persister.GetCommits(StreamId, Revision, Int32.MaxValue)
+                                              .SelectMany(c => c.Events);
                     PopulateStream(newEvents);
                 }
             }

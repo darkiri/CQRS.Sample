@@ -1,49 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using CQRS.Sample.Events;
 using CQRS.Sample.Store;
 using Machine.Specifications;
 using Moq;
 
 namespace CQRS.Sample.Tests.Store
 {
-    public class event_based_context {
-        protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC737");
-
-        protected static IdentifiableEvent Event(string payload) {
-            return new StringEvent(payload);
-        }
-    }
-
-    public abstract class IdentifiableEvent : IEvent, IEquatable<StringEvent>
-    {
-        protected IdentifiableEvent()
-        {
-            Id = Guid.NewGuid();
-        }
-
-        public Guid Id { get; set; }
-
-        public bool Equals(StringEvent other)
-        {
-            return null != other && Id == other.Id;
-        }
-    }
-
-    public class StringEvent : IdentifiableEvent
-    {
-        public StringEvent(string payload)
-        {
-            Payload = payload;
-        }
-
-        public string Payload { get; set; }
-    }
-
     [Subject(typeof (EventStore))]
-    public class event_store_context : event_based_context
+    public class event_store_context 
     {
+        protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC737");
         protected static Mock<ICommitDispatcher> DispatcherMock;
         protected static Mock<IPersister> PersisterMock;
         protected static EventStore Store;
@@ -56,6 +22,12 @@ namespace CQRS.Sample.Tests.Store
                                 Store = new EventStore(PersisterMock.Object, DispatcherMock.Object);
                             };
 
+        protected static StoreEvent Event(string payload) {
+            return new StringEvent {
+                Payload = payload,
+            };
+        }
+
         public static IEventStream WithStream(int revision)
         {
             Stream = new EventStream(PersisterMock.Object, DispatcherMock.Object, StreamId, revision);
@@ -64,12 +36,12 @@ namespace CQRS.Sample.Tests.Store
 
         protected static void VerifyPersistEventsCall(int times)
         {
-            PersisterMock.Verify(p => p.PersistEvents(StreamId, Moq.It.IsAny<IEnumerable<StoreEvent>>()), Times.Exactly(times));
+            PersisterMock.Verify(p => p.PersistCommit(StreamId, Moq.It.IsAny<IEnumerable<StoreEvent>>()), Times.Exactly(times));
         }
 
         protected static void VerifyLoadingEventsCall(int minRevision, int maxRevision, int times)
         {
-            PersisterMock.Verify(p => p.GetEvents(StreamId, minRevision, maxRevision), Times.Exactly(times));
+            PersisterMock.Verify(p => p.GetCommits(StreamId, minRevision, maxRevision), Times.Exactly(times));
         }
 
         protected static void VerifyDispatchCall(int times)
@@ -87,17 +59,9 @@ namespace CQRS.Sample.Tests.Store
         {
             return Moq.It.IsAny<T>();
         }
-    }
 
-    public static class EventStoreContextExtensions
-    {
-        public static IEnumerable<StoreEvent> ToStoreEvents(this IEnumerable<IEvent> events, int startVersion = 0)
-        {
-            return events.Select(evt => new StoreEvent
-            {
-                StreamRevision = startVersion++,
-                Body = evt,
-            });
+        protected static Commit[] AsCommit(params StoreEvent[] events) {
+            return new[]{ new Commit(events)};
         }
     }
 }

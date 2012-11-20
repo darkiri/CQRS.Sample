@@ -11,30 +11,46 @@ using Raven.Client;
 namespace CQRS.Sample.Tests.Store
 {
     [Subject(typeof (RavenPersister))]
-    public class raven_persistence_context : event_based_context
+    public class raven_persistence_context
     {
+        protected static readonly Guid StreamId = Guid.Parse("90AEA96E-C0A5-4CDF-9272-8A22986AC738");
+
         protected static IDocumentStore Store;
         protected static DocumentStoreConfiguration StoreConfig;
         protected static RavenPersister Persister;
 
-        private Establish context = () =>
+        private Establish context =()=>
         {
             StoreConfig = Bootstrapper.InMemory();
             Store = StoreConfig.EventStore;
             Persister = new RavenPersister(StoreConfig);
         };
 
-        private Cleanup all = () => StoreConfig.Dispose();
+        private Cleanup all =()=> StoreConfig.Dispose();
+
+        protected static StoreEvent Event(string payload, int revision) {
+            var evt = new StringEvent {
+                Payload = payload,
+                StreamRevision = revision
+            };
+            return evt;
+        }
 
         protected static void PersistSomeEvents(IEnumerable<StoreEvent> events)
         {
-            Persister.PersistEvents(StreamId, events);
+            Persister.PersistCommit(StreamId, events);
             WaitForNonStaleResults();
         }
 
-        static void WaitForNonStaleResults()
+        protected static void PersistSomeEvents(params StoreEvent[] events)
         {
-            while(Store.DatabaseCommands.GetStatistics().StaleIndexes.Length != 0)
+            Persister.PersistCommit(StreamId, events);
+            WaitForNonStaleResults();
+        }
+        
+        private static void WaitForNonStaleResults()
+        {
+            while (Store.DatabaseCommands.GetStatistics() .StaleIndexes.Length != 0)
             {
                 Thread.Sleep(10);
             }
@@ -49,14 +65,8 @@ namespace CQRS.Sample.Tests.Store
                 Assert.That(events.Count(), Is.EqualTo(1));
                 var evt = events.First();
                 Assert.That(evt.Id, Is.EqualTo(expected.Id));
-                Assert.That(evt.Body, Is.EqualTo(expected.Body));
+                Assert.That(evt.StreamId, Is.EqualTo(expected.StreamId));
             }
-        }
-
-        protected static void AssertEqual(Func<Object> persisted, object expected)
-        {
-            WaitForNonStaleResults();
-            Assert.That(persisted(), Is.EqualTo(expected));
         }
 
         protected static void AssertEquivalent(Func<IEnumerable<Object>> persisted, params object[] expected)
@@ -65,33 +75,30 @@ namespace CQRS.Sample.Tests.Store
             Assert.That(persisted().ToArray(), Is.EquivalentTo(expected));
         }
 
-        protected static void AssertEventNotInStore(IdentifiableEvent expected)
+        protected static void AssertEventNotInStore(StoreEvent expected)
         {
             WaitForNonStaleResults();
             using (var session = Store.OpenSession())
             {
                 var events = GetAllPersistedEvents(session);
-                Assert.That(events.Count(e => ((IdentifiableEvent)e.Body).Id == expected.Id), Is.EqualTo(0));
+                Assert.That(events.Count(e => e.Equals(expected)), Is.EqualTo(0));
             }
         }
 
-        private static IEnumerable<StoreEvent> GetAllPersistedEvents(IDocumentSession session)
+        private static StoreEvent[] GetAllPersistedEvents(IDocumentSession session) 
         {
-            var events = session
-                .Query<RavenPersister.Commit>()
-                .ToArray()
-                .SelectMany(c => c.Events);
-            return events;
+            return session.Query<Commit>()
+                          .ToArray()
+                          .SelectMany(c => c.Events)
+                          .ToArray();
         }
 
-        protected static StoreEvent AsStoreEvent(IEvent evt, int version)
+        protected static Commit LoadCommit(int revision) 
         {
-            return new StoreEvent
+            using (var session = Store.OpenSession()) 
             {
-                Id = Guid.NewGuid(),
-                StreamRevision = version,
-                Body = evt,
-            };
+                return session.Load<Commit>(Commit.BuildStableId(StreamId, revision));
+            }
         }
     }
 }

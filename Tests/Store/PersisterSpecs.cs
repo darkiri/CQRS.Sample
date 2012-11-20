@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CQRS.Sample.Store;
 using Machine.Specifications;
+using NUnit.Framework;
 using Raven.Abstractions.Exceptions;
 using Raven.Client;
 
@@ -11,98 +12,85 @@ namespace CQRS.Sample.Tests.Store
     [Subject(typeof (RavenPersister))]
     public class when_persist_events : raven_persistence_context
     {
-        static StoreEvent SomeEvent = AsStoreEvent(new StringIntEvent {A = "123", B = 456}, 0);
-        Because of = () => PersistSomeEvents(new[] {SomeEvent});
-        It should_store_events_in_the_database = () => AssertEventInStore(SomeEvent);
+        protected static StoreEvent SomeEvent = new StringIntEvent {A = "123", B = 456};
+
+        Because of =()=> PersistSomeEvents(SomeEvent);
+
+        It should_store_events_in_the_database =()=> AssertEventInStore(SomeEvent);
+        It should_mark_commit_as_not_dispatched =()=> Assert.False(LoadCommit(0).IsDispatched);
     }
 
-        public class StringIntEvent : IEvent, IEquatable<StringIntEvent>
-        {
-            public int Version { get; private set; }
-            public string A { get; set; }
-            public int B { get; set; }
-
-            public bool Equals(StringIntEvent other)
-            {
-                return Version == other.Version && string.Equals(A, other.A) && B == other.B;
-            }
-        }
+    public class StringIntEvent : StoreEvent
+    {
+        public string A { get; set; }
+        public int B { get; set; }
+    }
 
     [Subject(typeof (RavenPersister))]
     public class when_persisting_events_for_exisitng_revision : raven_persistence_context
     {
-        static StoreEvent second = AsStoreEvent(Event("second"), 2);
-        static StoreEvent third = AsStoreEvent(Event("third"), 3);
-        static StoreEvent anotherSecond = AsStoreEvent(Event("another second"), 2);
-        static Exception Exception;
+        protected static StoreEvent Commit1_Event1 = Event("second", 0);
+        protected static StoreEvent Commit2_Event1 = Event("another second", 0);
+        protected static StoreEvent Commit2_Event2 = Event("third", 1);
+        protected static Exception Exception;
 
-        Establish context = () => PersistSomeEvents(new[] {second});
+        Establish context =()=> PersistSomeEvents(Commit1_Event1);
+        Because of =()=> Exception = Catch.Exception(() => PersistSomeEvents(Commit2_Event1, Commit2_Event2));
 
-        Because of =
-            () => Exception = Catch.Exception(() => PersistSomeEvents(new[] {anotherSecond, third}));
-
-        It should_throw_optimistic_concurrency_exception =
-            () => Exception.ShouldBeOfType<OptimisticConcurrencyException>();
-
-        It should_store_second_event = () => AssertEventInStore(second);
-        It should_not_store_another_second_event = () => AssertEventNotInStore((IdentifiableEvent)anotherSecond.Body);
+        It should_throw_optimistic_concurrency_exception =()=> Exception.ShouldBeOfType<OptimisticConcurrencyException>();
+        It should_store_second_event =()=> AssertEventInStore(Commit1_Event1);
+        It should_not_store_first_event_from_the_second_commit =()=> AssertEventNotInStore(Commit2_Event1);
+        It should_not_store_second_event_from_the_second_commit =()=> AssertEventNotInStore(Commit2_Event2);
     }
 
     [Subject(typeof (RavenPersister))]
     public class when_loading_events : raven_persistence_context
     {
-        static StoreEvent FirstEvent = AsStoreEvent(Event("first"), 1);
-        static StoreEvent SecondEvent = AsStoreEvent(Event("second"), 2);
+        protected static StoreEvent FirstEvent = Event("first", 0);
+        protected static StoreEvent SecondEvent = Event("second", 1);
+        protected static IEnumerable<StoreEvent> LoadedEvents;
+        
+        Establish context =()=> PersistSomeEvents(FirstEvent, SecondEvent);
+        Because of =()=> LoadedEvents = Persister.GetCommits(StreamId, 0, 1)
+                                                   .SelectMany(c => c.Events);
 
-        static List<StoreEvent> SampleEvents = new List<StoreEvent>
-                                               {
-                                                   AsStoreEvent(Event("zero"), 0),
-                                                   FirstEvent,
-                                                   SecondEvent,
-                                                   AsStoreEvent(Event("third"), 3),
-                                               };
-
-        Because of = () => PersistSomeEvents(SampleEvents);
-
-        It should_request_events_from_the_database =
-            () => AssertEquivalent(() => Persister.GetEvents(StreamId, 1, 2), FirstEvent, SecondEvent);
+        It should_request_events_from_the_database =()=> AssertEquivalent(() => LoadedEvents, FirstEvent, SecondEvent);
     }
 
     [Subject(typeof (RavenPersister))]
-    public class when_marking_event_as_dispatched : raven_persistence_context
-    {
-        static StoreEvent TheEvent = AsStoreEvent(Event("root"), 0);
-        Establish context = () => PersistSomeEvents(new[] {TheEvent});
-        Because of = () => Persister.MarkAsDispatched(TheEvent);
+    public class when_marking_commit_as_dispatched : raven_persistence_context {
+        protected static Commit Commit;
 
-        It should_reset_undispatched_flag =
-            () => AssertEqual(() => Persister.GetEvents(StreamId, 0, 0).First().IsDispatched, true);
+        Establish context = () => {
+            PersistSomeEvents(Event("root", 0));
+            Commit = Persister.GetUndispatchedCommits().First();
+        };
+        Because of =()=> Persister.MarkAsDispatched(Commit);
+
+        It should_reset_undispatched_flag =()=> Assert.True(LoadCommit(0).IsDispatched);
     }
 
     [Subject(typeof (RavenPersister))]
-    public class when_requesting_undispatched_events : raven_persistence_context
+    public class when_requesting_undispatched_commits : raven_persistence_context
     {
-        static StoreEvent FirstEvent = AsStoreEvent(Event("first"), 1);
-        static StoreEvent SecondEvent = AsStoreEvent(Event("second"), 2);
+        protected static StoreEvent FirstEvent = Event("first", 0);
+        protected static StoreEvent SecondEvent = Event("second", 1);
+        protected static IEnumerable<Commit> UndispatchedCommits;
 
-        static List<StoreEvent> SampleEvents = new List<StoreEvent>
-                                               {
-                                                   FirstEvent,
-                                                   SecondEvent,
-                                               };
+        Establish context =()=> {
+            PersistSomeEvents(FirstEvent, SecondEvent);
+            Persister.MarkAsDispatched(LoadCommit(0));
+        };
+        Because of =()=> UndispatchedCommits = Persister.GetUndispatchedCommits();
 
-        Establish context = () => PersistSomeEvents(SampleEvents);
-        Because of = () => Persister.MarkAsDispatched(FirstEvent);
-
-        It should_request_events_with_flag_undispatched =
-            () => AssertEqual(() => Persister.GetUndispatchedEvents().First(), SecondEvent);
+        It should_return_commits_with_undispatched_flag =()=> Assert.That(UndispatchedCommits.Count(),Is.EqualTo(0));
     }
 
 
     [Subject("Raven Experiments")]
     public class when_storing_two_objects_with_same_id_in_separate_sessions : raven_persistence_context
     {
-        static Exception Exception;
+        protected static Exception Exception;
 
         Because of = () => Exception = Catch.Exception(CreateTwoObjectsInTwoSessions);
         It should_throw_concurrency_exception = () => Exception.ShouldBeOfType<ConcurrencyException>();
@@ -137,7 +125,7 @@ namespace CQRS.Sample.Tests.Store
     [Subject("Raven Experiments")]
     public class when_updating_same_object_in_separate_sessions : raven_persistence_context
     {
-        static Exception Exception;
+        protected static Exception Exception;
 
         Establish context = () => StoreSingleObject(new MyClass {Text = "this one"});
         Because of = () => Exception = Catch.Exception(UpdateTwoObjectsInTwoSessions);

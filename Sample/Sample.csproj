@@ -70,7 +70,6 @@
     <Compile Include="Aggregates\AccountAggregateMemento.cs" />
     <Compile Include="Aggregates\AggregateBase.cs" />
     <Compile Include="Aggregates\MutableState.cs" />
-    <Compile Include="Aggregates\ReflectionHelper.cs" />
     <Compile Include="Bootstrapping\Bootstrapper.cs" />
     <Compile Include="Bootstrapping\SimpleConvention.cs" />
     <Compile Include="Bus\IHandlerRepository.cs" />
@@ -79,7 +78,6 @@
     <Compile Include="Commands\CreateAccount.cs" />
     <Compile Include="Commands\DomainCommand.cs" />
     <Compile Include="Events\AccountEvents.cs" />
-    <Compile Include="Events\DomainEvent.cs" />
     <Compile Include="Events\ServerFailure.cs" />
     <Compile Include="IUnitOfWork.cs" />
     <Compile Include="Container.cs" />
@@ -90,6 +88,7 @@
     <Compile Include="Reporting\AccountDTO.cs" />
     <Compile Include="Reporting\AccountQuery.cs" />
     <Compile Include="Reporting\ReportingDatabaseProjection.cs" />
+    <Compile Include="Store\Commit.cs" />
     <Compile Include="Store\EventStore.cs" />
     <Compile Include="Store\EventStream.cs" />
     <Compile Include="Store\ICommitDispatcher.cs" />
